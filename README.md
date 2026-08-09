@@ -1,36 +1,47 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 초록도감
 
-## Getting Started
+일상에서 발견한 식물을 촬영하면 AI가 후보를 제시하고, 사용자가 고른 식물을 자기 사진으로 만든 카드와 도감에 수집하는 서비스입니다. 모바일 우선 반응형 웹입니다.
 
-First, run the development server:
+## 시작하기
+
+1. Supabase SQL Editor에서 `supabase/schema.sql`을 실행한 뒤 `supabase/seed.sql`을 실행합니다.
+2. `.env.example`을 복사해 `.env.local`을 만들고 값을 채웁니다. iNaturalist는 키가 필요 없습니다.
+3. 설치하고 실행합니다.
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+4. http://localhost:3000/api/health 에서 키가 제대로 잡혔는지 확인합니다.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 폴더 구조
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+app/
+  api/          서버 API (Route Handler)
+  <화면>/        페이지
+lib/
+  api.ts        화면에서 API를 부르는 함수 모음 (브라우저에서 사용)
+  server/       서버 전용 모듈 (클라이언트 컴포넌트에서 import 금지)
+types/          팀 공통 타입과 API 응답 형식
+supabase/       DB 스키마와 공식 도감 시드
+docs/api.md     API 사용법
+```
 
-## Learn More
+`lib/server/supabase.ts`는 Supabase 비밀 키를 사용합니다. **클라이언트 컴포넌트에서 import하면 안 됩니다.** 화면에서는 항상 `lib/api.ts`를 거쳐 API를 호출합니다.
 
-To learn more about Next.js, take a look at the following resources:
+## 스크립트
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| 명령 | 설명 |
+| --- | --- |
+| `npm run dev` | 개발 서버 |
+| `npm run build` | 프로덕션 빌드 |
+| `npm run typecheck` | 타입 검사 |
+| `npm run lint` | ESLint |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 아직 없는 것
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- 로그인 (지금은 `x-user-id` 헤더 또는 `DEV_USER_ID`로 사용자를 구분합니다)
+- 경험치 적립과 레벨 계산
+- 공식 도감 데이터 (현재 3종, 기획안 목표는 30~50종)
