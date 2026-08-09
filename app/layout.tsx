@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import BottomNav from "@/components/BottomNav";
+import AppFrame from "@/components/AppFrame";
 
 export const metadata: Metadata = {
   title: "초록도감",
@@ -21,10 +21,7 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <div className="app-shell">
-          <main className="app-content">{children}</main>
-          <BottomNav />
-        </div>
+        <AppFrame>{children}</AppFrame>
       </body>
     </html>
   );

@@ -85,6 +85,10 @@ button {
   overflow-y: auto;
 }
 
+.app-content--auth {
+  padding: 0;
+}
+
 ::-webkit-scrollbar {
   width: 6px;
 }
