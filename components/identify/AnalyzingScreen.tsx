@@ -7,7 +7,7 @@ import { PlantPreviewCard } from "@/components/ui/PlantPreviewCard";
 import { CircularProgress } from "@/components/ui/CircularProgress";
 import { StepIndicator } from "@/components/ui/StepIndicator";
 import { getDraft } from "@/lib/identify-storage";
-import type { IdentifyResponse } from "@/types/api";
+import { MOCK_CANDIDATES } from "@/data/mock-plants";
 
 const STATUS_MESSAGES = [
   { threshold: 0, text: "사진을 준비하는 중" },
@@ -42,39 +42,18 @@ export function AnalyzingScreen({ imageUrl }: AnalyzingScreenProps) {
       if (current >= 95) clearInterval(interval);
     }, 400);
 
-    const identify = async () => {
-      try {
-        const response = await fetch("/api/identify", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            image: draft.imageDataUrl,
-            part: draft.part,
-          }),
-        });
+    const timer = setTimeout(() => {
+      clearInterval(interval);
+      setProgress(100);
 
-        const data = (await response.json()) as IdentifyResponse;
+      sessionStorage.setItem("plant-identify-results", JSON.stringify(MOCK_CANDIDATES));
+      router.replace("/identify?step=candidates");
+    }, 2400);
 
-        clearInterval(interval);
-        setProgress(100);
-
-        setTimeout(() => {
-          if (data.success && data.candidates.length > 0) {
-            sessionStorage.setItem("plant-identify-results", JSON.stringify(data.candidates));
-            router.replace("/identify?step=candidates");
-          } else {
-            router.replace("/identify?step=failed");
-          }
-        }, 600);
-      } catch {
-        clearInterval(interval);
-        router.replace("/identify?step=failed");
-      }
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timer);
     };
-
-    identify();
-
-    return () => clearInterval(interval);
   }, [router]);
 
   return (

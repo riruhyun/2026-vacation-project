@@ -39,8 +39,8 @@ export function FailedScreen() {
         <PrimaryButton onClick={() => router.push("/capture")}>
           다시 촬영하기
         </PrimaryButton>
-        <SecondaryButton onClick={() => router.push("/collection")}>
-          직접 검색하기
+        <SecondaryButton onClick={() => router.push("/capture")}>
+          다른 사진 선택하기
         </SecondaryButton>
       </div>
     </div>

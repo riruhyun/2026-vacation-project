@@ -28,8 +28,14 @@ export function CandidatesScreen() {
   const router = useRouter();
   const [candidates] = useState<PlantCandidate[]>(getInitialCandidates);
   const [selectedId, setSelectedId] = useState(() => candidates[0].id);
+  const [confirmedName, setConfirmedName] = useState<string | null>(null);
 
   const selected = candidates.find((c) => c.id === selectedId) ?? candidates[0];
+
+  const handleConfirm = () => {
+    sessionStorage.setItem("plant-selected-candidate", JSON.stringify(selected));
+    setConfirmedName(selected.name);
+  };
 
   return (
     <div className="mx-auto flex min-h-full w-full max-w-md flex-col px-5 py-6">
@@ -57,13 +63,16 @@ export function CandidatesScreen() {
       </div>
 
       <div className="mt-auto space-y-2 pt-8">
-        <PrimaryButton
-          onClick={() => router.push(`/plants/${selected.id}`)}
-        >
-          {selected.name}으로 카드 만들기
+        {confirmedName && (
+          <p className="rounded-2xl bg-mint px-4 py-3 text-center text-sm font-semibold text-primary">
+            {confirmedName} 후보를 선택했어요
+          </p>
+        )}
+        <PrimaryButton onClick={handleConfirm}>
+          {selected.name} 후보 선택
         </PrimaryButton>
-        <SecondaryButton onClick={() => router.push("/collection")}>
-          후보에 없어요 · 직접 검색
+        <SecondaryButton onClick={() => router.push("/capture")}>
+          사진 다시 가져오기
         </SecondaryButton>
       </div>
     </div>
