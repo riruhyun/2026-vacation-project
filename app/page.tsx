@@ -1,65 +1,167 @@
-import Image from "next/image";
+// TODO: mockUserProgress -> GET /api/profile, mockCollectedPlants -> GET /api/collection
 
-export default function Home() {
+import Link from "next/link";
+import Button from "@/components/Button";
+import ProgressBar from "@/components/ProgressBar";
+import PlantCard from "@/components/PlantCard";
+import { mockUserProgress, mockCollectedPlants } from "@/data/mock-plants";
+
+export default function HomePage() {
+  const { nickname, levelTitle, level, xpToNextLevel, currentXp } = mockUserProgress;
+
+  // XP 진행률 계산 (더미: 임시로 다음 레벨까지 총 필요 XP를 400으로 가정)
+  const xpPerLevel = 400;
+  const xpPercent = Math.round(
+    ((xpPerLevel - xpToNextLevel) / xpPerLevel) * 100
+  );
+
+  const recentCollected = mockCollectedPlants.slice(0, 3);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+      <div>
+        <h1 style={{ fontSize: "22px", fontWeight: 800, margin: 0 }}>
+          안녕하세요, {nickname}님
+        </h1>
+        <p
+          style={{
+            fontSize: "14px",
+            color: "var(--color-text-secondary)",
+            margin: "6px 0 0",
+          }}
+        >
+          오늘도 새로운 초록을 만나볼까요?
+        </p>
+      </div>
+
+      <div
+        style={{
+          background: "var(--color-deep-green)",
+          borderRadius: "var(--radius-card)",
+          padding: "20px",
+          color: "#ffffff",
+        }}
+      >
+        <p
+          style={{
+            fontSize: "13px",
+            fontWeight: 600,
+            margin: 0,
+            opacity: 0.85,
+          }}
+        >
+          Lv. {level} {levelTitle}
+        </p>
+        <p style={{ fontSize: "19px", fontWeight: 800, margin: "6px 0 12px" }}>
+          다음 레벨까지 {xpToNextLevel} XP
+        </p>
+        <ProgressBar percent={xpPercent} />
+        <p
+          style={{
+            fontSize: "12px",
+            margin: "8px 0 0",
+            opacity: 0.7,
+          }}
+        >
+          누적 {currentXp} XP
+        </p>
+      </div>
+
+      <div
+        style={{
+          background: "var(--color-deep-green)",
+          borderRadius: "var(--radius-card)",
+          padding: "24px 20px",
+          color: "#ffffff",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "12px",
+        }}
+      >
+        <p
+          style={{
+            fontSize: "18px",
+            fontWeight: 800,
+            lineHeight: 1.4,
+            margin: 0,
+          }}
+        >
+          지금 보이는 식물을
+          <br />
+          카드로 남겨보세요
+        </p>
+        <Link href="/capture">
+          <Button variant="accent" style={{ whiteSpace: "nowrap" }}>
+            촬영하기
+          </Button>
+        </Link>
+      </div>
+
+      <div>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "12px",
+          }}
+        >
+          <h2 style={{ fontSize: "16px", fontWeight: 800, margin: 0 }}>
+            최근 수집
+          </h2>
+          <Link
+            href="/collection"
+            style={{
+              fontSize: "13px",
+              fontWeight: 600,
+              color: "var(--color-deep-green)",
+            }}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+            전체 보기
+          </Link>
+        </div>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
+            gap: "10px",
+          }}
+        >
+          {recentCollected.map((plant) => (
+            <PlantCard
+              key={plant.speciesId}
+              speciesId={plant.speciesId}
+              koreanName={plant.koreanName}
+              rarity={plant.rarity}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+          ))}
         </div>
-      </main>
+      </div>
+
+      <div
+        style={{
+          background: "var(--color-surface)",
+          border: "1px solid var(--color-border)",
+          borderRadius: "var(--radius-card)",
+          padding: "16px 18px",
+        }}
+      >
+        <p style={{ fontSize: "13px", fontWeight: 700, margin: 0 }}>
+          촬영 팁
+        </p>
+        <p
+          style={{
+            fontSize: "13px",
+            color: "var(--color-text-secondary)",
+            margin: "6px 0 0",
+            lineHeight: 1.5,
+          }}
+        >
+          식물 한 개체가 화면 중앙에 오면 더 잘 찾아요.
+        </p>
+      </div>
     </div>
   );
 }
