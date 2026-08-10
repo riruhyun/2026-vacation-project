@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { PageHeader } from "@/components/ui/PageHeader";
+import PageHeader from "@/components/layout/PageHeader";
 import { PrimaryButton } from "@/components/ui/PrimaryButton";
 import { SecondaryButton } from "@/components/ui/SecondaryButton";
 import { CandidateCard } from "@/components/ui/CandidateCard";
@@ -36,6 +36,7 @@ export function CandidatesScreen() {
       <PageHeader
         title="이 식물이 맞나요?"
         subtitle="AI 후보를 보고 직접 가장 가까운 식물을 선택해주세요."
+        showBack
         onBack={() => router.push("/identify?step=confirm")}
       />
 

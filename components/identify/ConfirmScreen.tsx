@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { PageHeader } from "@/components/ui/PageHeader";
+import PageHeader from "@/components/layout/PageHeader";
 import { PrimaryButton } from "@/components/ui/PrimaryButton";
 import { SecondaryButton } from "@/components/ui/SecondaryButton";
 import { PlantPreviewCard } from "@/components/ui/PlantPreviewCard";
@@ -30,6 +30,7 @@ export function ConfirmScreen({ imageUrl, initialPart }: ConfirmScreenProps) {
       <PageHeader
         title="사진 확인"
         subtitle="분석 전에 식물이 선명하게 보이는지 확인해주세요."
+        showBack
         onBack={() => router.push("/capture")}
       />
 
