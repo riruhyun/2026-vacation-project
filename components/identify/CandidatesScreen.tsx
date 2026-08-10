@@ -8,25 +8,19 @@ import { SecondaryButton } from "@/components/ui/SecondaryButton";
 import { CandidateCard } from "@/components/ui/CandidateCard";
 import { InfoBox } from "@/components/ui/InfoBox";
 import { MOCK_CANDIDATES } from "@/data/mock-plants";
-import type { PlantCandidate } from "@/types/plant";
+import { getIdentifyResults } from "@/lib/identify-storage";
+import { toCandidateCardViewModel } from "@/lib/identify-candidate";
+import type { CandidateCardViewModel } from "@/types/identify";
 
 function getInitialCandidates() {
-  if (typeof window === "undefined") return MOCK_CANDIDATES;
-
-  const stored = sessionStorage.getItem("plant-identify-results");
-  if (!stored) return MOCK_CANDIDATES;
-
-  try {
-    const parsed = JSON.parse(stored) as PlantCandidate[];
-    return parsed.length > 0 ? parsed : MOCK_CANDIDATES;
-  } catch {
-    return MOCK_CANDIDATES;
-  }
+  return (
+    getIdentifyResults() ?? MOCK_CANDIDATES.map(toCandidateCardViewModel)
+  );
 }
 
 export function CandidatesScreen() {
   const router = useRouter();
-  const [candidates] = useState<PlantCandidate[]>(getInitialCandidates);
+  const [candidates] = useState<CandidateCardViewModel[]>(getInitialCandidates);
   const [selectedId, setSelectedId] = useState(() => candidates[0].id);
 
   const selected = candidates.find((c) => c.id === selectedId) ?? candidates[0];
@@ -58,7 +52,13 @@ export function CandidatesScreen() {
 
       <div className="mt-auto space-y-2 pt-8">
         <PrimaryButton
-          onClick={() => router.push(`/plants/${selected.id}`)}
+          onClick={() =>
+            router.push(
+              selected.candidate.plantId === null
+                ? "/search"
+                : `/plants/${selected.candidate.plantId}`,
+            )
+          }
         >
           {selected.name}으로 카드 만들기
         </PrimaryButton>

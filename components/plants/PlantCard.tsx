@@ -3,27 +3,28 @@
 // 미획득 식물은 실루엣(placeholder) 처리를 위해 isLocked prop 사용
 
 import Link from "next/link";
-import type { Rarity } from "@/types/plant";
+import { RARITY_LABEL } from "@/types/domain";
+import type { PlantSlug, RarityCode } from "@/types/domain";
 
 interface PlantCardProps {
-  speciesId: string;
+  slug: PlantSlug;
   koreanName: string;
-  rarity: Rarity;
+  rarity: RarityCode;
   observationCount?: number; // 있으면 "흔함 · N회" 형태로 표시
   imageUrl?: string;
   isLocked?: boolean; // true면 실루엣 표시 (미획득)
-  href?: string; // 지정하지 않으면 /plants/[speciesId]로 이동
+  href?: string; // 지정하지 않으면 /plants/[slug]로 이동
 }
 
 // 희귀도별 카드 배경 톤
-const CARD_BG: Record<Rarity, string> = {
-  흔함: "var(--color-mint-100)",
-  보통: "var(--color-cream-100)",
-  드묾: "var(--color-blush-100)",
+const CARD_BG: Record<RarityCode, string> = {
+  common: "var(--color-mint-100)",
+  uncommon: "var(--color-cream-100)",
+  rare: "var(--color-blush-100)",
 };
 
 export default function PlantCard({
-  speciesId,
+  slug,
   koreanName,
   rarity,
   observationCount,
@@ -31,7 +32,7 @@ export default function PlantCard({
   isLocked = false,
   href,
 }: PlantCardProps) {
-  const link = href ?? `/plants/${speciesId}`;
+  const link = href ?? `/plants/${slug}`;
 
   const content = (
     <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -85,7 +86,7 @@ export default function PlantCard({
               margin: "2px 0 0",
             }}
           >
-            {rarity}
+            {RARITY_LABEL[rarity]}
             {typeof observationCount === "number" && ` · ${observationCount}회`}
           </p>
         )}

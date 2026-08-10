@@ -1,7 +1,7 @@
-import type { PlantCandidate } from "@/types/plant";
+import type { CandidateCardViewModel } from "@/types/identify";
 
 interface CandidateCardProps {
-  candidate: PlantCandidate;
+  candidate: CandidateCardViewModel;
   selected: boolean;
   onSelect: () => void;
 }
@@ -18,12 +18,16 @@ export function CandidateCard({ candidate, selected, onSelect }: CandidateCardPr
     >
       <div className="flex items-start gap-3">
         <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-mint">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={candidate.imageUrl}
-            alt={candidate.name}
-            className="h-12 w-12 object-contain"
-          />
+          {candidate.imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={candidate.imageUrl}
+              alt={candidate.name}
+              className="h-12 w-12 object-contain"
+            />
+          ) : (
+            <span className="text-xs text-muted">이미지 없음</span>
+          )}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">

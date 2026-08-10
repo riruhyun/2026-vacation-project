@@ -1,5 +1,6 @@
 import Image from "next/image";
-import type { NewPlantRewardViewModel } from "../types";
+import { RARITY_LABEL } from "@/types/domain";
+import type { NewPlantRewardViewModel } from "@/types/identify";
 import styles from "./new-plant-reward.module.css";
 
 interface RewardPlantCardProps {
@@ -22,7 +23,7 @@ export default function RewardPlantCard({ reward }: RewardPlantCardProps) {
           unoptimized
         />
       </div>
-      <span className={styles.rarity}>{reward.rarity}</span>
+      <span className={styles.rarity}>{RARITY_LABEL[reward.rarity]}</span>
       <h2>{reward.koreanName}</h2>
       <p className={styles.scientificName}>{reward.scientificName}</p>
       <p className={styles.discoveredAt}>{reward.discoveredAt} 첫 발견</p>

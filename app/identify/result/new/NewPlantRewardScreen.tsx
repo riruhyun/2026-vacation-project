@@ -1,7 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
+import { RARITY_LABEL } from "@/types/domain";
 import IdentifyResultShell from "../IdentifyResultShell";
-import type { NewPlantRewardViewModel } from "../types";
+import type { NewPlantRewardViewModel } from "@/types/identify";
 import RewardPlantCard from "./RewardPlantCard";
 import styles from "./new-plant-reward.module.css";
 
@@ -36,7 +37,7 @@ export default function NewPlantRewardScreen({
       <section className={styles.xpReward} aria-label="경험치 보상">
         <strong>+{totalXp} XP</strong>
         <span>
-          새로운 종 {reward.baseXp} · {reward.rarity} 등급 {reward.rarityBonusXp}
+          새로운 종 {reward.baseXp} · {RARITY_LABEL[reward.rarity]} 등급 {reward.rarityBonusXp}
         </span>
       </section>
 

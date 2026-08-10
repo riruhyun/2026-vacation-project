@@ -131,8 +131,8 @@ export default function HomePage() {
         >
           {recentCollected.map((plant) => (
             <PlantCard
-              key={plant.speciesId}
-              speciesId={plant.speciesId}
+              key={plant.slug}
+              slug={plant.slug}
               koreanName={plant.koreanName}
               rarity={plant.rarity}
             />

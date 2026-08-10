@@ -6,8 +6,10 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { PlantPreviewCard } from "@/components/ui/PlantPreviewCard";
 import { CircularProgress } from "@/components/ui/CircularProgress";
 import { StepIndicator } from "@/components/ui/StepIndicator";
-import { getDraft } from "@/lib/identify-storage";
-import type { IdentifyResponse } from "@/types/api";
+import { identifyPlant } from "@/lib/api";
+import { dataUrlToFile } from "@/lib/data-url";
+import { getDraft, saveIdentifyResults } from "@/lib/identify-storage";
+import { toCandidateCardViewModel } from "@/lib/identify-candidate";
 
 const STATUS_MESSAGES = [
   { threshold: 0, text: "사진을 준비하는 중" },
@@ -44,23 +46,16 @@ export function AnalyzingScreen({ imageUrl }: AnalyzingScreenProps) {
 
     const identify = async () => {
       try {
-        const response = await fetch("/api/identify", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            image: draft.imageDataUrl,
-            part: draft.part,
-          }),
-        });
-
-        const data = (await response.json()) as IdentifyResponse;
+        const image = await dataUrlToFile(draft.imageDataUrl, "plant");
+        const data = await identifyPlant(image);
+        const candidates = data.candidates.map(toCandidateCardViewModel);
 
         clearInterval(interval);
         setProgress(100);
 
         setTimeout(() => {
-          if (data.success && data.candidates.length > 0) {
-            sessionStorage.setItem("plant-identify-results", JSON.stringify(data.candidates));
+          if (candidates.length > 0) {
+            saveIdentifyResults(candidates);
             router.replace("/identify?step=candidates");
           } else {
             router.replace("/identify?step=failed");

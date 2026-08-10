@@ -95,11 +95,11 @@ export default function SearchPage() {
                         )}
 
                         {results.map((species) => {
-                            const isSelected = selectedId === species.id;
+                            const isSelected = selectedId === species.slug;
                             return (
                                 <button
-                                    key={species.id}
-                                    onClick={() => setSelectedId(species.id)}
+                                    key={species.slug}
+                                    onClick={() => setSelectedId(species.slug)}
                                     style={{
                                         display: "flex",
                                         alignItems: "center",
@@ -198,7 +198,7 @@ export default function SearchPage() {
                 style={{ opacity: selectedId ? 1 : 0.4, cursor: selectedId ? "pointer" : "not-allowed" }}
                 onClick={() => {
                     if (!selectedId) return;
-                    // TODO: 실제로는 카드 생성 흐름(예: /capture/result?speciesId=...)으로 이동
+                    // TODO: 실제로는 카드 생성 흐름(예: /capture/result?slug=...)으로 이동
                     router.push(`/plants/${selectedId}`);
                 }}
             >

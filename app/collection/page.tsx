@@ -10,7 +10,7 @@ import {
     mockCollectionSummary,
     mockPlantSpecies,
 } from "@/data/mock-plants";
-import type { PlantCategory } from "@/types/plant";
+import type { PlantCategory } from "@/types/domain";
 
 type FilterTab = "전체" | PlantCategory;
 
@@ -20,7 +20,7 @@ export default function CollectionPage() {
     const [activeTab, setActiveTab] = useState<FilterTab>("전체");
 
     const collectedIds = useMemo(
-        () => new Set(mockCollectedPlants.map((p) => p.speciesId)),
+        () => new Set(mockCollectedPlants.map((plant) => plant.slug)),
         []
     );
 
@@ -102,14 +102,14 @@ export default function CollectionPage() {
             >
                 {filteredSpecies.map((species) => {
                     const collected = mockCollectedPlants.find(
-                        (p) => p.speciesId === species.id
+                        (plant) => plant.slug === species.slug
                     );
-                    const isLocked = !collectedIds.has(species.id);
+                    const isLocked = !collectedIds.has(species.slug);
 
                     return (
                         <PlantCard
-                            key={species.id}
-                            speciesId={species.id}
+                            key={species.slug}
+                            slug={species.slug}
                             koreanName={species.koreanName}
                             rarity={species.rarity}
                             observationCount={collected?.observationCount}

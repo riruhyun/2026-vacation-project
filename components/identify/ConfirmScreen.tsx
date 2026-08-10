@@ -9,7 +9,7 @@ import { PlantPreviewCard } from "@/components/ui/PlantPreviewCard";
 import { SelectionChips } from "@/components/ui/SelectionChips";
 import { InfoBox } from "@/components/ui/InfoBox";
 import { updateDraftPart } from "@/lib/identify-storage";
-import type { PlantPart } from "@/types/plant";
+import type { PlantPart } from "@/types/domain";
 
 interface ConfirmScreenProps {
   imageUrl: string;
