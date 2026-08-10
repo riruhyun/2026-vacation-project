@@ -1,16 +1,24 @@
-interface SecondaryButtonProps {
-  children: React.ReactNode;
-  onClick?: () => void;
+import type { ButtonHTMLAttributes, ReactNode } from "react";
+import Button from "@/components/Button";
+
+interface SecondaryButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  children: ReactNode;
 }
 
-export function SecondaryButton({ children, onClick }: SecondaryButtonProps) {
+export function SecondaryButton({ children, style, ...rest }: SecondaryButtonProps) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="w-full py-3 text-center text-sm font-medium text-primary transition-colors hover:text-primary-light"
+    <Button
+      {...rest}
+      variant="ghost"
+      fullWidth
+      style={{
+        padding: "12px 0",
+        fontSize: "14px",
+        fontWeight: 500,
+        ...style,
+      }}
     >
       {children}
-    </button>
+    </Button>
   );
 }

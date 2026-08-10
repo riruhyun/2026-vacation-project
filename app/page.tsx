@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import Button from "@/components/Button";
-import ProgressBar from "@/components/ProgressBar";
-import PlantCard from "@/components/PlantCard";
+import ProgressBar from "@/components/home/ProgressBar";
+import PlantCard from "@/components/plants/PlantCard";
 import { mockUserProgress, mockCollectedPlants } from "@/data/mock-plants";
 
 export default function HomePage() {

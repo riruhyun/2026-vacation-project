@@ -4,7 +4,7 @@
 
 import { useMemo, useState } from "react";
 import PageHeader from "@/components/PageHeader";
-import PlantCard from "@/components/PlantCard";
+import PlantCard from "@/components/plants/PlantCard";
 import {
     mockCollectedPlants,
     mockCollectionSummary,

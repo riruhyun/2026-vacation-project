@@ -2,7 +2,7 @@
 
 import { notFound } from "next/navigation";
 import PageHeader from "@/components/PageHeader";
-import RarityBadge from "@/components/RarityBadge";
+import RarityBadge from "@/components/plants/RarityBadge";
 import {
     getMockCollectedPlantBySpeciesId,
     getMockPlantSpeciesById,

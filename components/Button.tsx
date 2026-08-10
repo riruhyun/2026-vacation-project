@@ -6,7 +6,7 @@
 
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 
-type ButtonVariant = "primary" | "accent" | "outline";
+type ButtonVariant = "primary" | "accent" | "outline" | "ghost";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
     variant?: ButtonVariant;
@@ -25,6 +25,10 @@ ButtonVariant,
             color: "var(--color-deep-green)",
                 border: "1.5px solid var(--color-deep-green)",
   },
+    ghost: {
+        background: "transparent",
+        color: "var(--color-deep-green)",
+    },
 };
 
 export default function Button({

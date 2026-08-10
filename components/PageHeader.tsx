@@ -8,11 +8,19 @@ import type { ReactNode } from "react";
 
 interface PageHeaderProps {
     title: string;
+    subtitle?: string;
     showBack?: boolean;
+    onBack?: () => void;
     action?: ReactNode; // 우측 액션 (ex. "검색" 버튼)
 }
 
-export default function PageHeader({ title, showBack = false, action }: PageHeaderProps) {
+export default function PageHeader({
+    title,
+    subtitle,
+    showBack = false,
+    onBack,
+    action,
+}: PageHeaderProps) {
     const router = useRouter();
 
     return (
@@ -28,7 +36,13 @@ export default function PageHeader({ title, showBack = false, action }: PageHead
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 {showBack && (
                     <button
-                        onClick={() => router.back()}
+                        onClick={() => {
+                            if (onBack) {
+                                onBack();
+                            } else {
+                                router.back();
+                            }
+                        }}
                         aria-label="뒤로 가기"
                         style={{
                             background: "none",
@@ -61,6 +75,18 @@ export default function PageHeader({ title, showBack = false, action }: PageHead
                 >
                     {title}
                 </h1>
+                {subtitle && (
+                    <p
+                        style={{
+                            margin: "4px 0 0",
+                            fontSize: "13px",
+                            lineHeight: 1.5,
+                            color: "var(--color-text-secondary)",
+                        }}
+                    >
+                        {subtitle}
+                    </p>
+                )}
             </div>
             {action}
         </div>
