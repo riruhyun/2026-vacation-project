@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { PageHeader } from "@/components/ui/PageHeader";
+import PageHeader from "@/components/layout/PageHeader";
 import { PlantPreviewCard } from "@/components/ui/PlantPreviewCard";
 import { CircularProgress } from "@/components/ui/CircularProgress";
 import { StepIndicator } from "@/components/ui/StepIndicator";
@@ -77,6 +77,7 @@ export function AnalyzingScreen({ imageUrl }: AnalyzingScreenProps) {
       <PageHeader
         title="식물을 찾고 있어요"
         subtitle="꽃·잎·전체 형태를 비교하고 있습니다."
+        showBack
       />
 
       <PlantPreviewCard imageUrl={imageUrl} />
