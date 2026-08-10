@@ -11,11 +11,10 @@ export function CandidateCard({ candidate, selected, onSelect }: CandidateCardPr
     <button
       type="button"
       onClick={onSelect}
-      className={`w-full rounded-2xl border-2 p-4 text-left transition-colors ${
-        selected
+      className={`w-full rounded-2xl border-2 p-4 text-left transition-colors ${selected
           ? "border-primary bg-mint"
           : "border-border bg-surface hover:border-primary/30"
-      }`}
+        }`}
     >
       <div className="flex items-start gap-3">
         <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-mint">
@@ -30,11 +29,10 @@ export function CandidateCard({ candidate, selected, onSelect }: CandidateCardPr
           <div className="flex items-center gap-2">
             <span className="text-base font-bold text-foreground">{candidate.name}</span>
             <span
-              className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                selected
+              className={`rounded-full px-2 py-0.5 text-xs font-semibold ${selected
                   ? "bg-primary text-white"
                   : "bg-border text-muted"
-              }`}
+                }`}
             >
               {candidate.confidence}%
             </span>
