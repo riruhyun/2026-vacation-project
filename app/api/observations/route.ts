@@ -1,5 +1,6 @@
 import { errorMessage, fail, ok } from '@/lib/server/http'
 import { imageError, imageExtension, imageUrl } from '@/lib/server/image'
+import { toObservationDto } from '@/lib/server/observation'
 import { supabase } from '@/lib/server/supabase'
 import { userIdFrom } from '@/lib/server/user'
 
@@ -107,10 +108,10 @@ export async function POST(request: Request) {
     return ok(
       {
         result: existing ? 'duplicate' : 'new',
-        observation: {
-          ...observation,
-          imageUrl: imageUrl(observation.image_path),
-        },
+        observation: toObservationDto(
+          observation,
+          imageUrl(observation.image_path),
+        ),
       },
       201,
     )

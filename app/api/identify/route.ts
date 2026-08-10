@@ -1,7 +1,8 @@
 import { errorMessage, fail, ok } from "@/lib/server/http";
 import { imageError } from "@/lib/server/image";
 import { supabase } from "@/lib/server/supabase";
-import type { IdentifyResponse, RarityCode } from "@/types/plant";
+import type { IdentifyResponseDto } from "@/types/identify";
+import type { RarityCode } from "@/types/domain";
 
 export const runtime = "nodejs";
 
@@ -152,10 +153,10 @@ export async function POST(request: Request) {
       };
     });
 
-    const payload: IdentifyResponse = {
+    const payload = {
       candidates,
       remainingRequests: body.remainingIdentificationRequests ?? null,
-    };
+    } satisfies IdentifyResponseDto;
 
     return ok(payload);
   } catch (error) {

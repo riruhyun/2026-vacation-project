@@ -1,9 +1,16 @@
-import type { ApiResponse, HealthResponse } from '@/types/api'
+import type {
+  ApiResponse,
+  HealthResponse,
+} from '@/types/api'
+import type { IdentifyResponseDto } from '@/types/identify'
 import type {
   CreateObservationInput,
-  CreateObservationResponse,
+  CreateObservationResponseDto,
 } from '@/types/observation'
-import type { CollectionResponse, IdentifyResponse, PlantDetailResponse } from '@/types/plant'
+import type {
+  CollectionResponseDto,
+  PlantDetailResponseDto,
+} from '@/types/plant'
 import type { ProfileResponse } from '@/types/user'
 
 /**
@@ -81,7 +88,7 @@ export function identifyPlant(image: File) {
   form.append('image', image)
 
   // Content-Type은 브라우저가 boundary와 함께 자동으로 붙이므로 지정하지 않습니다.
-  return request<IdentifyResponse>('/api/identify', {
+  return request<IdentifyResponseDto>('/api/identify', {
     method: 'POST',
     body: form,
   })
@@ -100,7 +107,7 @@ export function saveObservation(input: CreateObservationInput) {
     if (input.displayName) form.append('displayName', input.displayName)
   }
 
-  return request<CreateObservationResponse>('/api/observations', {
+  return request<CreateObservationResponseDto>('/api/observations', {
     method: 'POST',
     headers: userHeaders(),
     body: form,
@@ -109,14 +116,14 @@ export function saveObservation(input: CreateObservationInput) {
 
 /** 공식 도감 전체와 기타 발견, 완성률을 가져옵니다. */
 export function getCollection() {
-  return request<CollectionResponse>('/api/collection', {
+  return request<CollectionResponseDto>('/api/collection', {
     headers: userHeaders(),
   })
 }
 
 /** 식물 상세 정보와 내 관찰 기록을 가져옵니다. */
 export function getPlant(plantId: number) {
-  return request<PlantDetailResponse>(`/api/plants/${plantId}`, {
+  return request<PlantDetailResponseDto>(`/api/plants/${plantId}`, {
     headers: userHeaders(),
   })
 }

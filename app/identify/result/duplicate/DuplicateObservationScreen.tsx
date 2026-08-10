@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import IdentifyResultShell from "../IdentifyResultShell";
-import type { DuplicateObservationViewModel } from "../types";
+import type { DuplicateObservationViewModel } from "@/types/identify";
 import styles from "./duplicate-observation.module.css";
 
 interface DuplicateObservationScreenProps {
@@ -57,7 +57,7 @@ export default function DuplicateObservationScreen({
 
       <Link
         className={styles.primaryAction}
-        href={`/plants/${observation.speciesId}`}
+        href={`/plants/${observation.slug}`}
       >
         관찰 기록 추가
       </Link>

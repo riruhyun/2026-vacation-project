@@ -4,6 +4,14 @@ export type Profile = {
   xp: number
 }
 
+export interface UserProgress {
+  nickname: string
+  level: number
+  levelTitle: string
+  currentXp: number
+  xpToNextLevel: number
+}
+
 export type ProfileStats = {
   totalObservations: number
   officialPlants: number

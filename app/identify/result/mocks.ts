@@ -1,13 +1,13 @@
 import type {
   DuplicateObservationViewModel,
   NewPlantRewardViewModel,
-} from "./types";
+} from "@/types/identify";
 
 export const newPlantRewardMock = {
-  speciesId: "sancheoljjuk",
+  slug: "sancheoljjuk",
   koreanName: "산철쭉",
   scientificName: "Rhododendron yedoense",
-  rarity: "보통",
+  rarity: "uncommon",
   photoUrl: "/images/identify-result/sancheoljjuk.svg",
   discoveredAt: "2026. 8. 3",
   baseXp: 100,
@@ -15,7 +15,7 @@ export const newPlantRewardMock = {
 } satisfies NewPlantRewardViewModel;
 
 export const duplicateObservationMock = {
-  speciesId: "mindeulle",
+  slug: "mindeulle",
   koreanName: "민들레",
   photoUrl: "/images/identify-result/mindeulle.svg",
   observedAt: "2026. 8. 3",

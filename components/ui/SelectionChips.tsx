@@ -1,4 +1,4 @@
-import type { PlantPart } from "@/types/plant";
+import type { PlantPart } from "@/types/domain";
 
 const PARTS: { value: PlantPart; label: string }[] = [
   { value: "auto", label: "자동" },

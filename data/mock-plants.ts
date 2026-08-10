@@ -5,20 +5,20 @@ import { PLANT_SPECIES } from "./plant-species";
 import type {
   CollectionSummary,
   CollectedPlant,
-  PlantCandidate,
   PlantSpecies,
-  UserProgress,
 } from "@/types/plant";
+import type { UserProgress } from "@/types/user";
+import type { IdentifyCandidateDto } from "@/types/identify";
 
 export const mockPlantSpecies = PLANT_SPECIES;
 
 export const mockCollectedPlants: CollectedPlant[] = [
   {
-    speciesId: "sancheoljjuk",
+    slug: "sancheoljjuk",
     koreanName: "산철쭉",
     scientificName: "Rhododendron yedoense",
     category: "꽃",
-    rarity: "보통",
+    rarity: "uncommon",
     description:
       "봄에 연분홍빛 꽃이 피며, 잎 가장자리와 뒷면에 잔털이 있는 편이에요.",
     userPhotoUrl: "/plants/user/sancheoljjuk-user.png",
@@ -26,55 +26,55 @@ export const mockCollectedPlants: CollectedPlant[] = [
     observationCount: 1,
   },
   {
-    speciesId: "mindeulle",
+    slug: "mindeulle",
     koreanName: "민들레",
     scientificName: "Taraxacum",
     category: "꽃",
-    rarity: "흔함",
+    rarity: "common",
     description: "노란 꽃이 피고 나면 하얀 솜털 씨앗이 바람에 날아가요.",
     userPhotoUrl: "/plants/user/mindeulle-user.png",
     firstFoundAt: "2026-08-02",
     observationCount: 3,
   },
   {
-    speciesId: "tokkipul",
+    slug: "tokkipul",
     koreanName: "토끼풀",
     scientificName: "Trifolium repens",
     category: "풀",
-    rarity: "흔함",
+    rarity: "common",
     description: "세 갈래 잎이 특징이며, 드물게 네 잎을 찾을 수 있어요.",
     userPhotoUrl: "/plants/user/tokkipul-user.png",
     firstFoundAt: "2026-08-02",
     observationCount: 2,
   },
   {
-    speciesId: "eunhaengnamu",
+    slug: "eunhaengnamu",
     koreanName: "은행나무",
     scientificName: "Ginkgo biloba",
     category: "나무",
-    rarity: "흔함",
+    rarity: "common",
     description: "부채 모양 잎이 특징이며, 가을에 노랗게 물듭니다.",
     userPhotoUrl: "/plants/user/eunhaengnamu-user.png",
     firstFoundAt: "2026-08-03",
     observationCount: 2,
   },
   {
-    speciesId: "gaemangcho",
+    slug: "gaemangcho",
     koreanName: "개망초",
     scientificName: "Erigeron annuus",
     category: "꽃",
-    rarity: "보통",
+    rarity: "uncommon",
     description: "작은 하얀 꽃이 계란 프라이처럼 노란 중심을 가지고 있어요.",
     userPhotoUrl: "/plants/user/gaemangcho-user.png",
     firstFoundAt: "2026-08-03",
     observationCount: 1,
   },
   {
-    speciesId: "ganggajipul",
+    slug: "ganggajipul",
     koreanName: "강아지풀",
     scientificName: "Setaria viridis",
     category: "풀",
-    rarity: "흔함",
+    rarity: "common",
     description: "강아지 꼬리처럼 복슬복슬한 이삭이 바람에 흔들려요.",
     userPhotoUrl: "/plants/user/ganggajipul-user.png",
     firstFoundAt: "2026-08-03",
@@ -97,14 +97,14 @@ export const mockUserProgress: UserProgress = {
   xpToNextLevel: 180,
 };
 
-export function getMockPlantSpeciesById(id: string): PlantSpecies | undefined {
-  return PLANT_SPECIES.find((p) => p.id === id);
+export function getMockPlantSpeciesById(slug: string): PlantSpecies | undefined {
+  return PLANT_SPECIES.find((plant) => plant.slug === slug);
 }
 
 export function getMockCollectedPlantBySpeciesId(
-  id: string
+  slug: string
 ): CollectedPlant | undefined {
-  return mockCollectedPlants.find((p) => p.speciesId === id);
+  return mockCollectedPlants.find((plant) => plant.slug === slug);
 }
 
 export function searchMockPlantSpecies(query: string): PlantSpecies[] {
@@ -121,12 +121,18 @@ export function searchMockPlantSpecies(query: string): PlantSpecies[] {
 
 const candidateConfidences = [87, 64, 46];
 
-export const MOCK_CANDIDATES: PlantCandidate[] = PLANT_SPECIES.slice(0, 3).map(
+export const MOCK_CANDIDATES: IdentifyCandidateDto[] = PLANT_SPECIES.slice(0, 3).map(
   (species, index) => ({
-    id: species.id,
-    name: species.koreanName,
-    confidence: candidateConfidences[index] ?? 40,
-    description: species.description,
+    plantId: null,
+    official: false,
+    matchType: null,
+    koreanName: species.koreanName,
+    scientificName: species.scientificName,
+    scientificNameWithAuthor: species.scientificName,
+    family: null,
+    score: (candidateConfidences[index] ?? 40) / 100,
+    rarity: species.rarity,
     imageUrl: species.imageUrl,
+    imageAttribution: null,
   })
 );
