@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { PageHeader } from "@/components/ui/PageHeader";
+import PageHeader from "@/components/layout/PageHeader";
 import { PrimaryButton } from "@/components/ui/PrimaryButton";
 import { SecondaryButton } from "@/components/ui/SecondaryButton";
 import { PlantPreviewCard } from "@/components/ui/PlantPreviewCard";
@@ -39,6 +39,7 @@ export function CaptureScreen() {
       <PageHeader
         title="식물 사진 가져오기"
         subtitle="휴대폰 카메라로 촬영하거나 갤러리의 사진을 선택하세요."
+        showBack
       />
 
       <PlantPreviewCard

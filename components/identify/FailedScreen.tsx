@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { PageHeader } from "@/components/ui/PageHeader";
+import PageHeader from "@/components/layout/PageHeader";
 import { PrimaryButton } from "@/components/ui/PrimaryButton";
 import { SecondaryButton } from "@/components/ui/SecondaryButton";
 import { InfoBox } from "@/components/ui/InfoBox";
@@ -14,6 +14,7 @@ export function FailedScreen() {
       <PageHeader
         title="식별에 실패했어요"
         subtitle="사진 상태를 확인하고 다시 시도하거나 직접 검색해보세요."
+        showBack
         onBack={() => router.push("/capture")}
       />
 
