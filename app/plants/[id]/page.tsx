@@ -1,7 +1,7 @@
 // TODO: GET /api/plants/[id]
 
 import { notFound } from "next/navigation";
-import PageHeader from "@/components/PageHeader";
+import PageHeader from "@/components/layout/PageHeader";
 import RarityBadge from "@/components/plants/RarityBadge";
 import {
     getMockCollectedPlantBySpeciesId,

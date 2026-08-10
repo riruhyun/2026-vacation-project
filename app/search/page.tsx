@@ -5,8 +5,8 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import PageHeader from "@/components/PageHeader";
-import Button from "@/components/Button";
+import PageHeader from "@/components/layout/PageHeader";
+import Button from "@/components/ui/Button";
 import { searchMockPlantSpecies } from "@/data/mock-plants";
 
 export default function SearchPage() {

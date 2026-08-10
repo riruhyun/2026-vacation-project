@@ -1,6 +1,6 @@
 "use client";
 
-import RootPageHeader from "@/components/PageHeader";
+import RootPageHeader from "@/components/layout/PageHeader";
 
 interface PageHeaderProps {
   title: string;

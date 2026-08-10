@@ -3,7 +3,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import PageHeader from "@/components/PageHeader";
+import PageHeader from "@/components/layout/PageHeader";
 import PlantCard from "@/components/plants/PlantCard";
 import {
     mockCollectedPlants,

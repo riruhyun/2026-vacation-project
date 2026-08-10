@@ -1,7 +1,7 @@
 // TODO: mockUserProgress -> GET /api/profile, mockCollectedPlants -> GET /api/collection
 
 import Link from "next/link";
-import Button from "@/components/Button";
+import Button from "@/components/ui/Button";
 import ProgressBar from "@/components/home/ProgressBar";
 import PlantCard from "@/components/plants/PlantCard";
 import { mockUserProgress, mockCollectedPlants } from "@/data/mock-plants";
