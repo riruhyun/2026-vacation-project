@@ -1,6 +1,6 @@
 # 초록도감 API
 
-모든 응답은 아래 모양입니다. 응답 포장은 `lib/server/http.ts`에서 한 번에 바꿀 수 있습니다.
+모든 응답은 아래 두 형식 중 하나입니다. 공통 형식은 `lib/server/http.ts` 한 곳에서 바꿀 수 있습니다.
 
 ```json
 { "success": true, "data": {} }
@@ -10,128 +10,114 @@
 { "success": false, "error": { "message": "오류 내용" } }
 ```
 
-## 화면에서 부르는 방법
+## 데이터 구성
 
-직접 `fetch`를 쓰지 말고 `lib/api.ts`를 쓰면 됩니다. 응답 포장을 벗겨 `data`만 돌려주고, 실패하면 `ApiError`를 던집니다.
+- 공식 도감 50종: `data/official-plants.ts`
+- 식별: Pl@ntNet
+- 한국 이름과 설명: 산림청 국립수목원 API
+- 사용자 XP, 레벨, 식물별 발견 횟수와 관찰 기록: Supabase
+
+공식 식물 목록은 작고 고정되어 있으므로 Supabase `plants` 테이블이나 seed를 사용하지 않습니다. 학명이 목록과 정확히 같은지만 서버 메모리에서 확인합니다.
+
+기존 Supabase 프로젝트에는 SQL Editor에서 `supabase/progress-migration.sql`을 한 번 실행해야 합니다. 새 프로젝트는 `supabase/schema.sql`을 실행합니다.
+
+## 경험치와 레벨
+
+첫 발견 경험치는 단계별로 다릅니다.
+
+| 단계 | 희귀도 | 첫 발견 XP |
+| --- | --- | ---: |
+| 1 | common | 50 |
+| 2 | uncommon | 90 |
+| 3 | rare | 140 |
+
+같은 식물을 다시 발견하면 이전 보상의 절반을 반올림해 지급하며, 최소 보상은 5 XP입니다.
+
+- 1단계: `50 → 25 → 13 → 6 → 5 …`
+- 2단계: `90 → 45 → 23 → 11 → 6 → 5 …`
+- 3단계: `140 → 70 → 35 → 18 → 9 → 5 …`
+- 공식 50종 이외의 기타 식물: `0 XP`, 발견 횟수만 증가
+
+레벨 1에서 2는 400 XP가 필요합니다. 이후 레벨마다 요구량이 50 XP씩 증가합니다.
+
+`400 → 450 → 500 → 550 …`
+
+저장 시 Supabase 함수 `record_observation_reward`가 발견 횟수, XP, 레벨과 관찰 기록을 한 트랜잭션에서 함께 갱신합니다.
+
+## 프론트에서 호출하기
+
+화면에서는 직접 `fetch`를 만들지 않고 `lib/api.ts`의 함수를 사용할 수 있습니다.
 
 ```ts
-'use client'
+import { identifyPlant, saveObservation } from '@/lib/api'
 
-import { identifyPlant, saveObservation, ApiError } from '@/lib/api'
-import type { PlantCandidate } from '@/types/plant'
+const { candidates } = await identifyPlant(image)
+const picked = candidates[0]
 
-async function run(image: File) {
-  try {
-    const { candidates } = await identifyPlant(image)
-    const picked: PlantCandidate = candidates[0]
+const saved = await saveObservation({
+  image,
+  plantId: picked.plantId,
+  scientificName: picked.scientificName,
+  displayName: picked.koreanName,
+})
 
-    const { result } = await saveObservation({
-      image,
-      plantId: picked.plantId,
-      scientificName: picked.scientificName,
-      displayName: picked.koreanName,
-    })
-
-    if (result === 'new') {
-      // 첫 발견 → 카드 공개 연출
-    }
-  } catch (error) {
-    if (error instanceof ApiError && error.isNotIdentified) {
-      // 사진에서 식물을 찾지 못함 → 다시 촬영 안내
-    }
-  }
-}
+console.log(saved.result) // new 또는 duplicate
+console.log(saved.reward) // xp, totalXp, level, leveledUp, plantCount
 ```
 
-로그인 연결 전에는 사용자 API에 `x-user-id` 헤더가 필요합니다. 앱 시작 지점에서 한 번 지정하면 됩니다.
+인증 연결 전 사용자 구분은 `x-user-id` 헤더를 사용합니다. `lib/api.ts`에서는 다음 한 줄로 설정합니다.
 
 ```ts
 import { setUserId } from '@/lib/api'
 
-setUserId('00000000-0000-4000-8000-000000000001')
+setUserId('Supabase Auth 사용자 UUID')
 ```
 
-헤더를 보내지 않으면 `.env.local`의 `DEV_USER_ID`가 대신 쓰입니다. 둘 다 없으면 `401`입니다.
-인증이 연결되면 `lib/server/user.ts`와 `lib/api.ts`의 `userHeaders` 두 곳만 고치면 됩니다.
+## POST /api/identify
 
-## GET /api/health
+`multipart/form-data`로 JPG 또는 PNG `image` 파일 하나를 보냅니다. 최대 크기는 6MB입니다.
 
-서버가 응답하는지, 각 서비스 키가 설정됐는지 확인합니다. 외부 API 할당량을 쓰지 않습니다.
+처리 순서는 다음과 같습니다.
+
+`사진 → Pl@ntNet 후보 3개 → 학명 → 공식 50종 확인 → 산림청 한국 이름·설명`
+
+공식 목록과 학명이 정확히 일치하면 `plantId`, `stage`, `rarity`가 들어갑니다. 일치하지 않으면 각각 `null`이며 기타 식물로 처리합니다.
+
+## POST /api/observations
+
+`x-user-id`와 `multipart/form-data`가 필요합니다.
+
+| 필드 | 필수 | 설명 |
+| --- | --- | --- |
+| `image` | O | 관찰 이미지 |
+| `plantId` | 조건부 | 공식 식물 ID |
+| `scientificName` | 조건부 | 기타 식물일 때 필요 |
+| `displayName` | 조건부 | 기타 식물일 때 필요 |
+
+응답 예시는 다음과 같습니다.
 
 ```json
 {
   "success": true,
   "data": {
-    "status": "ok",
-    "checkedAt": "2026-08-09T00:00:00.000Z",
-    "services": { "supabase": true, "plantNet": true, "iNaturalist": true }
+    "result": "duplicate",
+    "observation": {},
+    "reward": {
+      "xp": 25,
+      "totalXp": 425,
+      "level": 2,
+      "leveledUp": true,
+      "plantCount": 2
+    }
   }
 }
 ```
 
-## POST /api/identify
+## 조회 API
 
-`multipart/form-data`
+- `GET /api/collection`: 공식 50종의 수집 여부와 식물별 발견 횟수, 기타 발견 목록
+- `GET /api/plants/:id`: 로컬 공식 목록과 산림청 설명, 해당 사용자의 관찰 기록
+- `GET /api/profile`: 닉네임, 누적 XP, 레벨, 현재 레벨 XP, 다음 레벨 요구 XP, 수집 통계
+- `GET /api/health`: 환경변수 설정 여부 확인. 외부 API 요청은 보내지 않음
 
-| 필드 | 형식 | 필수 | 설명 |
-| --- | --- | --- | --- |
-| image | JPG 또는 PNG 파일 | O | 최대 6MB |
-
-사진 판별은 Pl@ntNet, 공식 도감 확인은 Supabase를 사용합니다. `score`는 0부터 1 사이이며 `plantId`가 `null`이면 기타 식물입니다. 식물을 찾지 못하면 HTTP `422`를 반환합니다.
-
-### 공식 도감 매칭 방식
-
-Pl@ntNet은 종명 대신 절 이름(`Taraxacum sect. Taraxacum`)이나 동의어(`Taraxacum campylodes`)를 반환할 때가 있어, 학명 완전일치만으로는 도감에 붙지 않습니다. 그래서 두 단계로 찾습니다.
-
-| `matchType` | 설명 |
-| --- | --- |
-| `exact` | 학명이 그대로 일치 |
-| `genus` | 속이 같고, **그 속의 공식 식물이 하나뿐일 때만** 연결 |
-| `null` | 공식 도감에 없음 (기타 발견) |
-
-같은 속에 공식 식물이 둘 이상이면 어느 쪽인지 정할 수 없으므로 붙이지 않습니다. 임의로 고르면 사용자가 직접 선택한다는 원칙이 깨지기 때문입니다. **같은 속의 다른 종을 도감에 추가하면 그 속의 `genus` 폴백은 자동으로 꺼집니다.**
-
-`genus`로 붙은 후보는 `koreanName`과 `rarity`가 도감 값으로 바뀌지만, `scientificName`은 Pl@ntNet이 준 값 그대로입니다. 화면에서 "속 기준 추정"으로 표시하고 싶다면 `matchType`을 쓰면 됩니다. 저장할 때는 `plantId`만 보내면 서버가 도감의 학명을 씁니다.
-
-응답 타입은 `IdentifyResponse` (`types/plant.ts`)입니다.
-
-## POST /api/observations
-
-`x-user-id`가 필요합니다. `multipart/form-data`를 사용합니다.
-
-| 필드 | 형식 | 필수 | 설명 |
-| --- | --- | --- | --- |
-| image | JPG 또는 PNG 파일 | O | 사용자 촬영 사진 |
-| plantId | 숫자 | 조건부 | 공식 식물 ID |
-| scientificName | 문자열 | 조건부 | 기타 식물일 때 필요 |
-| displayName | 문자열 | 조건부 | 기타 식물일 때 필요 |
-
-`result`는 첫 발견이면 `new`, 기존 발견이면 `duplicate`입니다. 성공 시 `201`입니다.
-응답의 `observation`은 DB 컬럼명을 그대로 쓰기 때문에 이 객체만 snake_case입니다 (`CreateObservationResponse`, `types/observation.ts`).
-
-## GET /api/collection
-
-`x-user-id`가 필요합니다. 공식 도감의 획득 여부, 완성률, 기타 발견을 반환합니다. 목록에는 표시명과 매칭 키만 있고 상세 식물정보는 없습니다. 미획득 식물은 `representativeImageUrl`이 `null`이라 실루엣으로 표시하면 됩니다.
-
-응답 타입은 `CollectionResponse` (`types/plant.ts`)입니다.
-
-## GET /api/plants/:id
-
-Supabase에서 공식 도감 여부를 확인하고 iNaturalist에서 한국어 이름, 대표 사진, 요약을 조회합니다. `x-user-id`가 있으면 그 사용자의 관찰 기록도 함께 반환합니다.
-
-`plants` 테이블에는 분류에 필요한 `korean_name`, `scientific_name`, `rarity`만 저장하고, 상세 정보는 저장하지 않습니다. iNaturalist는 공개 조회라 키가 필요 없습니다.
-
-응답 타입은 `PlantDetailResponse` (`types/plant.ts`)입니다.
-
-## GET /api/profile
-
-`x-user-id`가 필요합니다. 닉네임, 누적 경험치, 총 관찰 수, 공식·기타 발견 수, 완성률을 반환합니다.
-
-**경험치 적립과 레벨 계산은 아직 없습니다.** `xp`는 읽기만 하며 관찰을 저장해도 자동으로 오르지 않습니다. 기획안 5.5의 규칙(신규 100 XP, 보통 +30, 드묾 +70, 재관찰 10, 같은 날 1회)은 게임 UI·데이터 담당이 연결해야 합니다.
-
-응답 타입은 `ProfileResponse` (`types/user.ts`)입니다.
-
-## 담당 경계
-
-- 이 코드: 식별, iNaturalist 식물정보 조회, 이미지 업로드, 관찰 저장, 중복 판단, 도감·상세·통계 조회
-- 별도 담당: 로그인, 경험치 적립과 레벨 계산, 모든 UI
+사용자별 API는 `x-user-id`가 필요합니다. 실제 로그인 연결 시 `lib/server/user.ts`와 `lib/api.ts`의 사용자 헤더 부분만 Supabase Auth 세션으로 교체하면 됩니다.

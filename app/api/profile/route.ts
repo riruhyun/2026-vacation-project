@@ -1,11 +1,13 @@
+import { getOfficialPlant, OFFICIAL_PLANTS } from '@/data/official-plants'
 import { errorMessage, fail, ok } from '@/lib/server/http'
+import { levelProgress } from '@/lib/server/progress'
 import { supabase } from '@/lib/server/supabase'
 import { userIdFrom } from '@/lib/server/user'
 
-type ObservationRow = {
-  plant_id: number | null
+type CountRow = {
   scientific_name: string
-  observed_at: string
+  count: number
+  updated_at: string
 }
 
 export async function GET(request: Request) {
@@ -15,51 +17,44 @@ export async function GET(request: Request) {
   try {
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('nickname,xp')
+      .select('nickname,xp,level')
       .eq('id', userId)
       .maybeSingle()
 
     if (profileError) throw profileError
 
     const { data, error } = await supabase
-      .from('observations')
-      .select('plant_id,scientific_name,observed_at')
+      .from('user_plant_counts')
+      .select('scientific_name,count,updated_at')
       .eq('user_id', userId)
-      .order('observed_at', { ascending: false })
+      .order('updated_at', { ascending: false })
 
     if (error) throw error
 
-    const observations = (data || []) as ObservationRow[]
-    const officialPlantIds = new Set(
-      observations.flatMap((item) => (item.plant_id ? [item.plant_id] : [])),
+    const counts = (data || []) as CountRow[]
+    const officialPlants = counts.filter((item) =>
+      getOfficialPlant(item.scientific_name),
     )
-    const otherScientificNames = new Set(
-      observations
-        .filter((item) => item.plant_id === null)
-        .map((item) => item.scientific_name),
-    )
-
-    const { count, error: countError } = await supabase
-      .from('plants')
-      .select('id', { count: 'exact', head: true })
-
-    if (countError) throw countError
-
-    const totalPlants = count || 0
+    const otherPlants = counts.length - officialPlants.length
+    const xp = profile?.xp || 0
+    const progress = levelProgress(xp)
 
     return ok({
       profile: {
         nickname: profile?.nickname || null,
-        xp: profile?.xp || 0,
+        xp,
+        level: profile?.level || progress.level,
+        currentLevelXp: progress.currentXp,
+        xpToNextLevel: progress.xpToNextLevel,
       },
       stats: {
-        totalObservations: observations.length,
-        officialPlants: officialPlantIds.size,
-        otherPlants: otherScientificNames.size,
-        completionRate: totalPlants
-          ? Math.round((officialPlantIds.size / totalPlants) * 100)
-          : 0,
-        lastObservedAt: observations[0]?.observed_at || null,
+        totalObservations: counts.reduce((sum, item) => sum + item.count, 0),
+        officialPlants: officialPlants.length,
+        otherPlants,
+        completionRate: Math.round(
+          (officialPlants.length / OFFICIAL_PLANTS.length) * 100,
+        ),
+        lastObservedAt: counts[0]?.updated_at || null,
       },
     })
   } catch (error) {

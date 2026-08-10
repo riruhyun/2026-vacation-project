@@ -1,16 +1,18 @@
-import type { PlantId, PlantSlug, RarityCode } from "./domain";
+import type { PlantId, PlantSlug, PlantStage, RarityCode } from "./domain";
 
-export type MatchType = "exact" | "genus" | null;
+export type MatchType = "exact" | null;
 
 export type IdentifyCandidateDto = {
   plantId: PlantId | null;
   official: boolean;
   matchType: MatchType;
   koreanName: string;
+  description: string | null;
   scientificName: string;
   scientificNameWithAuthor: string;
   family: string | null;
   score: number;
+  stage: PlantStage | null;
   rarity: RarityCode | null;
   imageUrl: string | null;
   imageAttribution: string | null;
