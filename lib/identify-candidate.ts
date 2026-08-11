@@ -14,14 +14,17 @@ function isIdentifyCandidateDto(value: unknown): value is IdentifyCandidateDto {
   return (
     (typeof candidate.plantId === "number" || candidate.plantId === null) &&
     typeof candidate.official === "boolean" &&
-    (candidate.matchType === "exact" ||
-      candidate.matchType === "genus" ||
-      candidate.matchType === null) &&
+    (candidate.matchType === "exact" || candidate.matchType === null) &&
     typeof candidate.koreanName === "string" &&
+    isNullableString(candidate.description) &&
     typeof candidate.scientificName === "string" &&
     typeof candidate.scientificNameWithAuthor === "string" &&
     isNullableString(candidate.family) &&
     typeof candidate.score === "number" &&
+    (candidate.stage === 1 ||
+      candidate.stage === 2 ||
+      candidate.stage === 3 ||
+      candidate.stage === null) &&
     (candidate.rarity === "common" ||
       candidate.rarity === "uncommon" ||
       candidate.rarity === "rare" ||

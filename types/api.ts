@@ -20,6 +20,6 @@ export type HealthResponse = {
   services: {
     supabase: boolean;
     plantNet: boolean;
-    iNaturalist: boolean;
+    forest: boolean;
   };
 };

@@ -3,6 +3,7 @@ import type {
   PlantId,
   PlantSlug,
   PlantCategory,
+  PlantStage,
   RarityCode,
 } from "./domain";
 
@@ -40,6 +41,7 @@ export type CollectionPlantDto = {
   id: PlantId;
   koreanName: string;
   scientificName: string;
+  stage: PlantStage;
   rarity: RarityCode;
   collected: boolean;
   observationCount: number;
@@ -64,30 +66,17 @@ export type CollectionResponseDto = {
   others: OtherFindingDto[];
 };
 
-export type PlantInformationDto = {
-  id: number;
-  koreanName: string | null;
-  scientificName: string;
-  rank: string | null;
-  observationsCount: number;
-  summary: string | null;
-  wikipediaUrl: string | null;
-  image: {
-    url: string;
-    attribution: string | null;
-    license: string | null;
-  } | null;
-};
-
 export type PlantDetailResponseDto = {
   plant: {
     id: PlantId;
     official: true;
     koreanName: string;
     scientificName: string;
+    stage: PlantStage;
     rarity: RarityCode;
-    information: PlantInformationDto | null;
-    informationSource: "iNaturalist";
+    description: string | null;
+    informationSource: "산림청 국립수목원";
+    informationSourceUrl: "https://www.data.go.kr/data/15143513/openapi.do";
   };
   userCollection: {
     collected: boolean;

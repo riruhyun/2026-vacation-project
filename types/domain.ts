@@ -1,6 +1,7 @@
 export type PlantId = number;
 export type ObservationId = string;
 export type PlantSlug = string;
+export type PlantStage = 1 | 2 | 3;
 
 export type RarityCode = "common" | "uncommon" | "rare";
 export type RarityLabel = "흔함" | "보통" | "드묾";
