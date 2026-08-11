@@ -11,6 +11,7 @@ import {
     mockPlantSpecies,
 } from "@/data/mock-plants";
 import type { PlantCategory } from "@/types/domain";
+import CollectionEmptyState from "./pageempty";
 
 type FilterTab = "전체" | PlantCategory;
 
@@ -31,6 +32,10 @@ export default function CollectionPage() {
         );
     }, [activeTab]);
 
+    if (mockCollectedPlants.length === 0) {
+        return <CollectionEmptyState />;
+    }
+    
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             <PageHeader
