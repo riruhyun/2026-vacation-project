@@ -25,7 +25,7 @@ function IdentifyContent() {
   if (!draft && step !== "candidates" && step !== "failed") {
     return (
       <div className="flex min-h-full items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--color-deep-green)] border-t-transparent" />
       </div>
     );
   }
@@ -52,7 +52,7 @@ export default function IdentifyPage() {
     <Suspense
       fallback={
         <div className="flex min-h-full items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--color-deep-green)] border-t-transparent" />
         </div>
       }
     >
