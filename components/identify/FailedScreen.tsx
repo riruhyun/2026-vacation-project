@@ -1,47 +1,67 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import PageHeader from "@/components/layout/PageHeader";
+import { IdentifyFlowHeader } from "@/components/identify/IdentifyFlowHeader";
 import { PrimaryButton } from "@/components/ui/PrimaryButton";
 import { SecondaryButton } from "@/components/ui/SecondaryButton";
-import { InfoBox } from "@/components/ui/InfoBox";
+
+const RETRY_TIPS = [
+  { index: 1, title: "꽃", description: "꽃잎과 중심을 가까이" },
+  { index: 2, title: "잎", description: "잎맥과 가장자리를 선명하게" },
+  { index: 3, title: "전체", description: "줄기와 전체 형태가 보이게" },
+];
 
 export function FailedScreen() {
   const router = useRouter();
 
   return (
-    <div className="mx-auto flex min-h-full w-full max-w-md flex-col px-5 py-6">
-      <PageHeader
-        title="식별에 실패했어요"
-        subtitle="사진 상태를 확인하고 다시 시도하거나 직접 검색해보세요."
-        showBack
+    <div className="flex min-h-full flex-col">
+      <IdentifyFlowHeader
+        title="식별하기 어려워요"
+        subtitle="사진에서 충분한 특징을 찾지 못했습니다."
         onBack={() => router.push("/capture")}
       />
 
-      <div className="flex flex-1 flex-col items-center justify-center py-12">
-        <div className="flex h-24 w-24 items-center justify-center rounded-full bg-mint">
-          <i className="ri-error-warning-line text-5xl leading-none text-primary" aria-hidden="true" />
+      <section className="flex flex-col items-center pt-11 text-center">
+        <div className="flex h-[142px] w-[142px] items-center justify-center rounded-full bg-[#eef5ec]">
+          <span className="text-[64px] font-extrabold leading-none text-[var(--color-deep-green)]">
+            ?
+          </span>
         </div>
-        <p className="mt-6 text-center text-base font-semibold text-foreground">
-          식물을 찾지 못했습니다
+
+        <h2 className="mt-9 text-[24px] font-extrabold leading-tight text-[var(--color-deep-green)]">
+          다른 특징을 보여주세요
+        </h2>
+        <p className="mt-5 max-w-[260px] text-[14px] leading-relaxed text-[var(--color-text-secondary)]">
+          한 장의 사진보다 서로 다른 부위가 보이면 후보를 찾을 가능성이 높아져요.
         </p>
-        <p className="mt-2 text-center text-sm text-muted">
-          밝은 곳에서 식물 한 개체가 크게 보이도록 다시 촬영해주세요.
-        </p>
+      </section>
+
+      <div className="mt-12 space-y-3">
+        {RETRY_TIPS.map((tip) => (
+          <div
+            key={tip.index}
+            className="flex items-center rounded-[18px] bg-white px-4 py-3"
+          >
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[14px] bg-[var(--color-mint-100)] text-[13px] font-extrabold text-[var(--color-deep-green)]">
+              {tip.index}
+            </span>
+            <strong className="ml-5 w-10 text-[14px] font-extrabold text-[var(--color-text-primary)]">
+              {tip.title}
+            </strong>
+            <span className="ml-5 text-[13px] text-[var(--color-text-secondary)]">
+              {tip.description}
+            </span>
+          </div>
+        ))}
       </div>
 
-      <div className="mb-4">
-        <InfoBox>
-          AI가 불확실하면 꽃이나 잎 사진을 추가로 요청할 수 있어요.
-        </InfoBox>
-      </div>
-
-      <div className="space-y-2">
+      <div className="mt-auto space-y-3 pt-8">
         <PrimaryButton onClick={() => router.push("/capture")}>
-          다시 촬영하기
+          사진 추가해서 다시 분석
         </PrimaryButton>
-        <SecondaryButton onClick={() => router.push("/collection")}>
-          직접 검색하기
+        <SecondaryButton onClick={() => router.push("/search")}>
+          직접 이름 검색하기
         </SecondaryButton>
       </div>
     </div>

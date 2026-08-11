@@ -2,10 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import PageHeader from "@/components/layout/PageHeader";
-import { PlantPreviewCard } from "@/components/ui/PlantPreviewCard";
-import { CircularProgress } from "@/components/ui/CircularProgress";
-import { StepIndicator } from "@/components/ui/StepIndicator";
+import { IdentifyFlowHeader } from "@/components/identify/IdentifyFlowHeader";
 import { identifyPlant } from "@/lib/api";
 import { dataUrlToFile } from "@/lib/data-url";
 import { getDraft, saveIdentifyResults } from "@/lib/identify-storage";
@@ -20,6 +17,44 @@ const STATUS_MESSAGES = [
 
 interface AnalyzingScreenProps {
   imageUrl: string;
+}
+
+function ProgressRing({ progress }: { progress: number }) {
+  const size = 120;
+  const strokeWidth = 14;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (progress / 100) * circumference;
+
+  return (
+    <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90">
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="#e3f1e8"
+          strokeWidth={strokeWidth}
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="var(--color-deep-green)"
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          className="transition-[stroke-dashoffset] duration-300"
+        />
+      </svg>
+      <span className="absolute text-2xl font-extrabold text-[var(--color-deep-green)]">
+        {progress}%
+      </span>
+    </div>
+  );
 }
 
 export function AnalyzingScreen({ imageUrl }: AnalyzingScreenProps) {
@@ -38,6 +73,7 @@ export function AnalyzingScreen({ imageUrl }: AnalyzingScreenProps) {
     }
 
     let current = 0;
+    let isActive = true;
     const interval = setInterval(() => {
       current = Math.min(current + Math.floor(Math.random() * 12) + 4, 95);
       setProgress(current);
@@ -50,10 +86,12 @@ export function AnalyzingScreen({ imageUrl }: AnalyzingScreenProps) {
         const data = await identifyPlant(image);
         const candidates = data.candidates.map(toCandidateCardViewModel);
 
+        if (!isActive) return;
         clearInterval(interval);
         setProgress(100);
 
         setTimeout(() => {
+          if (!isActive) return;
           if (candidates.length > 0) {
             saveIdentifyResults(candidates);
             router.replace("/identify?step=candidates");
@@ -62,6 +100,7 @@ export function AnalyzingScreen({ imageUrl }: AnalyzingScreenProps) {
           }
         }, 600);
       } catch {
+        if (!isActive) return;
         clearInterval(interval);
         router.replace("/identify?step=failed");
       }
@@ -69,35 +108,50 @@ export function AnalyzingScreen({ imageUrl }: AnalyzingScreenProps) {
 
     identify();
 
-    return () => clearInterval(interval);
+    return () => {
+      isActive = false;
+      clearInterval(interval);
+    };
   }, [router]);
 
   return (
-    <div className="mx-auto flex min-h-full w-full max-w-md flex-col px-5 py-6">
-      <PageHeader
+    <div className="flex min-h-full flex-col">
+      <IdentifyFlowHeader
         title="식물을 찾고 있어요"
         subtitle="꽃·잎·전체 형태를 비교하고 있습니다."
-        showBack
+        onBack={() => router.push("/identify?step=confirm")}
       />
 
-      <PlantPreviewCard imageUrl={imageUrl} />
+      <section className="mx-auto w-[82%] overflow-hidden rounded-[20px]">
+        <div className="flex aspect-square items-center justify-center bg-[var(--color-mint-100)]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={imageUrl}
+            alt="분석 중인 식물 사진"
+            className="h-full w-full object-cover"
+          />
+        </div>
+        <div className="bg-[#315f4a] px-4 py-4 text-[13px] font-bold text-white">
+          촬영한 식물 사진
+        </div>
+      </section>
 
-      <div className="mt-8 flex flex-col items-center gap-4">
-        <CircularProgress progress={progress} />
+      <div className="mt-10 flex flex-col items-center gap-7">
+        <ProgressRing progress={progress} />
         <div className="text-center">
-          <p className="text-base font-semibold text-foreground">{statusMessage}</p>
-          <p className="mt-1 text-sm text-muted">보통 5~10초 정도 걸려요</p>
+          <p className="text-[16px] font-extrabold text-[var(--color-text-primary)]">
+            {statusMessage}
+          </p>
+          <p className="mt-3 text-[13px] text-[var(--color-text-secondary)]">
+            보통 5~10초 정도 걸려요
+          </p>
         </div>
       </div>
 
       <div className="mt-auto pt-8">
-        <StepIndicator
-          steps={[
-            { label: "사진 확인", status: "done" },
-            { label: "후보 검색", status: "active" },
-            { label: "정보 연결", status: "pending" },
-          ]}
-        />
+        <div className="mx-auto w-[76%] rounded-full bg-white px-5 py-4 text-center text-[12px] font-bold text-[var(--color-deep-green)]">
+          사진 확인&nbsp;&nbsp;✓&nbsp;&nbsp; 후보 검색&nbsp;&nbsp;·&nbsp;&nbsp; 정보 연결
+        </div>
       </div>
     </div>
   );
