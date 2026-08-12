@@ -3,14 +3,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import PageHeader from "@/components/layout/PageHeader";
-import PlantCard from "@/components/plants/PlantCard";
+import PageHeader from "../../components/layout/PageHeader";
+import PlantCard from "../../components/plants/PlantCard";
 import {
     mockCollectedPlants,
     mockCollectionSummary,
     mockPlantSpecies,
-} from "@/data/mock-plants";
-import type { PlantCategory } from "@/types/domain";
+} from "../../data/mock-plants";
+import type { PlantCategory } from "../../types/domain";
 import CollectionEmptyState from "./pageempty";
 
 type FilterTab = "전체" | PlantCategory;
