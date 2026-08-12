@@ -1,12 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { IdentifyFlowHeader } from "../identify/IdentifyFlowHeader";
-import { PrimaryButton } from "../ui/PrimaryButton";
 import { SecondaryButton } from "../ui/SecondaryButton";
 import { PlantPlaceholder } from "../ui/PlantPlaceholder";
-import { saveDraft } from "../../lib/identify-storage";
+import { useCaptureSession } from "@/hooks/useCaptureSession";
 
 const TIPS = [
   { title: "밝기", description: "밝고 선명한 사진" },
@@ -15,96 +12,16 @@ const TIPS = [
 ];
 
 export function CaptureScreen() {
-  const router = useRouter();
-  const galleryInputRef = useRef<HTMLInputElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [cameraReady, setCameraReady] = useState(false);
-  const [isMirrored, setIsMirrored] = useState(false);
-
-  useEffect(() => {
-    if (previewUrl) return;
-
-    let cancelled = false;
-
-    async function startCamera() {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "environment" },
-          audio: false,
-        });
-
-        if (cancelled) {
-          stream.getTracks().forEach((track) => track.stop());
-          return;
-        }
-
-        streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
-
-        const settings = stream.getVideoTracks()[0]?.getSettings();
-        setIsMirrored(!settings?.facingMode || settings.facingMode === "user");
-
-        setCameraReady(true);
-      } catch {
-        setCameraReady(false);
-      }
-    }
-
-    startCamera();
-
-    return () => {
-      cancelled = true;
-      streamRef.current?.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
-    };
-  }, [previewUrl]);
-
-  const handleFileSelect = (file: File | undefined) => {
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const dataUrl = event.target?.result as string;
-      setPreviewUrl(dataUrl);
-      saveDraft(dataUrl);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleCapture = () => {
-    if (previewUrl) {
-      router.push("/identify?step=confirm");
-      return;
-    }
-
-    const video = videoRef.current;
-    if (!cameraReady || !video || video.videoWidth === 0) return;
-
-    const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    // 화면에 거울 반전으로 보였다면, 캡처되는 이미지도 동일하게 반전해서 사용자가 실제로 본 모습 그대로 저장되도록 함
-    if (isMirrored) {
-      ctx.translate(canvas.width, 0);
-      ctx.scale(-1, 1);
-    }
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
-
-    streamRef.current?.getTracks().forEach((track) => track.stop());
-    streamRef.current = null;
-
-    setPreviewUrl(dataUrl);
-    saveDraft(dataUrl);
-    router.push("/identify?step=confirm");
-  };
+  const {
+    galleryInputRef,
+    videoRef,
+    previewUrl,
+    cameraReady,
+    isMirrored,
+    handleFileSelect,
+    handleCapture,
+    openGallery,
+  } = useCaptureSession();
 
   return (
     <div className="flex min-h-full flex-col">
@@ -177,7 +94,7 @@ export function CaptureScreen() {
         </button>
         <div className="flex justify-center">
           <SecondaryButton
-            onClick={() => galleryInputRef.current?.click()}
+            onClick={openGallery}
             style={{
               width: "236px",
               padding: "10px 30px",
