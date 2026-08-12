@@ -1,11 +1,12 @@
 // 공통 컴포넌트: 식물 카드
-// 홈의 "최근 수집", 도감의 그리드에서 재사용
+// 홈의 "최근 수집"(sm), 도감의 그리드(lg)에서 재사용
 // 미획득 식물은 실루엣(placeholder) 처리를 위해 isLocked prop 사용
 
 import Link from "next/link";
-import { RARITY_LABEL } from "../../types/domain";
-import type { PlantSlug, RarityCode } from "../../types/domain";
-import { PlantPlaceholder } from "../ui/PlantPlaceholder";
+import { RARITY_LABEL } from "@/types/domain";
+import type { PlantSlug, RarityCode } from "@/types/domain";
+
+type PlantCardSize = "sm" | "lg";
 
 interface PlantCardProps {
   slug: PlantSlug;
@@ -15,7 +16,27 @@ interface PlantCardProps {
   imageUrl?: string;
   isLocked?: boolean; // true면 실루엣 표시 (미획득)
   href?: string; // 지정하지 않으면 /plants/[slug]로 이동
+  size?: PlantCardSize; // sm: 홈 최근 수집(기존), lg: 도감 그리드(158x190)
 }
+
+interface PlantCardSizeStyle {
+  card: string;
+  imageWrap: string;
+  name: string;
+}
+
+const SIZE_STYLE: Record<PlantCardSize, PlantCardSizeStyle> = {
+  sm: {
+    card: "rounded-2xl bg-[var(--color-white)] p-3",
+    imageWrap: "h-[98px] w-full rounded-xl",
+    name: "text-sm",
+  },
+  lg: {
+    card: "w-full rounded-2xl bg-[var(--color-white)] p-3",
+    imageWrap: "aspect-[142/126] w-full rounded-xl",
+    name: "text-sm",
+  },
+};
 
 export default function PlantCard({
   slug,
@@ -25,12 +46,16 @@ export default function PlantCard({
   imageUrl,
   isLocked = false,
   href,
+  size = "sm",
 }: PlantCardProps) {
   const link = href ?? `/plants/${slug}`;
+  const style = SIZE_STYLE[size];
 
   const content = (
-    <div className="rounded-2xl bg-[var(--color-white)] p-3">
-      <div className="flex h-[98px] w-full items-center justify-center overflow-hidden rounded-xl bg-[#EEF3EA]">
+    <div className={style.card}>
+      <div
+        className={`flex items-center justify-center overflow-hidden bg-[#EEF3EA] ${style.imageWrap}`}
+      >
         {isLocked ? (
           // 미획득 식물: 실루엣 아이콘
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
@@ -47,7 +72,7 @@ export default function PlantCard({
             className="h-full w-full object-cover"
           />
         ) : (
-          <PlantPlaceholder />
+          <PlaceholderPlantIcon />
         )}
       </div>
 
@@ -55,8 +80,8 @@ export default function PlantCard({
         <p
           className={
             isLocked
-              ? "m-0 text-sm font-semibold text-[var(--color-sub)]"
-              : "m-0 text-sm font-semibold text-[var(--color-text)]"
+              ? `m-0 font-semibold text-[var(--color-sub)] ${style.name}`
+              : `m-0 font-semibold text-[var(--color-text)] ${style.name}`
           }
         >
           {isLocked ? "???" : koreanName}

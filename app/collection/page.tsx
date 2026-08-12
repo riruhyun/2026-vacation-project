@@ -3,19 +3,25 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import PageHeader from "../../components/layout/PageHeader";
-import PlantCard from "../../components/plants/PlantCard";
+import PageHeader from "@/components/layout/PageHeader";
+import PlantCard from "@/components/plants/PlantCard";
 import {
     mockCollectedPlants,
     mockCollectionSummary,
     mockPlantSpecies,
-} from "../../data/mock-plants";
-import type { PlantCategory } from "../../types/domain";
+} from "@/data/mock-plants";
+import type { PlantCategory } from "@/types/domain";
 import CollectionEmptyState from "./pageempty";
 
 type FilterTab = "전체" | PlantCategory;
 
 const FILTER_TABS: FilterTab[] = ["전체", "꽃", "풀", "나무"];
+
+const GRID_IMAGES = [
+    "/plants/example1.jpg",
+    "/plants/example2.webp",
+    "/plants/example3.jpg",
+];
 
 export default function CollectionPage() {
     const [activeTab, setActiveTab] = useState<FilterTab>("전체");
@@ -35,62 +41,41 @@ export default function CollectionPage() {
     if (mockCollectedPlants.length === 0) {
         return <CollectionEmptyState />;
     }
-    
+
     return (
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        <div className="flex flex-col gap-4">
             <PageHeader
                 title="나의 식물 도감"
                 action={
                     <button
-                        style={{
-                            background: "var(--color-surface)",
-                            border: "1px solid var(--color-border)",
-                            borderRadius: "var(--radius-pill)",
-                            padding: "8px 16px",
-                            fontSize: "13px",
-                            fontWeight: 700,
-                            cursor: "pointer",
-                        }}
                         onClick={() => {
                             window.location.href = "/search";
                         }}
+                        className="rounded-full bg-[var(--color-white)] px-4 py-2 text-xs font-semibold text-[var(--color-primary)]"
                     >
                         검색
                     </button>
                 }
             />
 
-            <p
-                style={{
-                    fontSize: "13px",
-                    color: "var(--color-text-secondary)",
-                    margin: "-8px 0 0",
-                }}
-            >
+            <p className="-mt-2 text-sm text-[var(--color-sub)]">
                 {mockCollectionSummary.totalSpeciesFound}종 발견 · 총{" "}
                 {mockCollectionSummary.totalObservations}회 관찰
             </p>
 
-            <div style={{ display: "flex", gap: "8px" }}>
+            <div className="flex gap-2">
                 {FILTER_TABS.map((tab) => {
                     const active = tab === activeTab;
                     return (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
-                            style={{
-                                flex: tab === "전체" ? "0 0 auto" : "1",
-                                padding: "10px 0",
-                                paddingLeft: tab === "전체" ? "20px" : undefined,
-                                paddingRight: tab === "전체" ? "20px" : undefined,
-                                borderRadius: "var(--radius-pill)",
-                                border: "none",
-                                background: active ? "var(--color-deep-green)" : "var(--color-surface)",
-                                color: active ? "#ffffff" : "var(--color-text-secondary)",
-                                fontSize: "14px",
-                                fontWeight: 700,
-                                cursor: "pointer",
-                            }}
+                            style={
+                                active
+                                    ? { background: "var(--color-primary)", color: "var(--color-white)" }
+                                    : { background: "var(--color-white)", color: "var(--color-sub)" }
+                            }
+                            className="flex h-[30px] w-[70px] items-center justify-center rounded-[15px] text-xs font-semibold"
                         >
                             {tab}
                         </button>
@@ -98,14 +83,8 @@ export default function CollectionPage() {
                 })}
             </div>
 
-            <div
-                style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(2, 1fr)",
-                    gap: "14px",
-                }}
-            >
-                {filteredSpecies.map((species) => {
+            <div className="grid grid-cols-2 gap-4">
+                {filteredSpecies.map((species, index) => {
                     const collected = mockCollectedPlants.find(
                         (plant) => plant.slug === species.slug
                     );
@@ -119,6 +98,12 @@ export default function CollectionPage() {
                             rarity={species.rarity}
                             observationCount={collected?.observationCount}
                             isLocked={isLocked}
+                            size="lg"
+                            imageUrl={
+                                isLocked
+                                    ? undefined
+                                    : GRID_IMAGES[index % GRID_IMAGES.length]
+                            }
                         />
                     );
                 })}
