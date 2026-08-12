@@ -6,9 +6,9 @@ import type {
   CollectionSummary,
   CollectedPlant,
   PlantSpecies,
-} from "../types/plant";
-import type { UserProgress } from "../types/user";
-import type { IdentifyCandidateDto } from "../types/identify";
+} from "@/types/plant";
+import type { UserProgress } from "@/types/user";
+import type { IdentifyCandidateDto } from "@/types/identify";
 
 export const mockPlantSpecies = PLANT_SPECIES;
 
@@ -121,6 +121,13 @@ export function searchMockPlantSpecies(query: string): PlantSpecies[] {
 
 const candidateConfidences = [87, 64, 46];
 
+// 임시 예시 이미지 (실제 식별 API 연동 전까지 사용)
+const CANDIDATE_EXAMPLE_IMAGES = [
+  "/plants/example1.jpg",
+  "/plants/example2.webp",
+  "/plants/example3.jpg",
+];
+
 export const MOCK_CANDIDATES: IdentifyCandidateDto[] = PLANT_SPECIES.slice(0, 3).map(
   (species, index) => ({
     plantId: null,
@@ -134,7 +141,7 @@ export const MOCK_CANDIDATES: IdentifyCandidateDto[] = PLANT_SPECIES.slice(0, 3)
     score: (candidateConfidences[index] ?? 40) / 100,
     stage: null,
     rarity: species.rarity,
-    imageUrl: species.imageUrl,
+    imageUrl: CANDIDATE_EXAMPLE_IMAGES[index % CANDIDATE_EXAMPLE_IMAGES.length],
     imageAttribution: null,
   })
 );

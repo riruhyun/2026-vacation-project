@@ -2,9 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { IdentifyFlowHeader } from "@/components/identify/IdentifyFlowHeader";
-import { PrimaryButton } from "@/components/ui/PrimaryButton";
-import { SecondaryButton } from "@/components/ui/SecondaryButton";
+import PageHeader from "@/components/layout/PageHeader";
 import { MOCK_CANDIDATES } from "@/data/mock-plants";
 import { getIdentifyResults } from "@/lib/identify-storage";
 import { toCandidateCardViewModel } from "@/lib/identify-candidate";
@@ -31,13 +29,14 @@ export function CandidatesScreen() {
 
   return (
     <div className="flex min-h-full flex-col">
-      <IdentifyFlowHeader
+      <PageHeader
         title="이 식물이 맞나요?"
         subtitle="AI 후보를 보고 직접 가장 가까운 식물을 선택해주세요."
+        showBack
         onBack={() => router.push("/identify?step=confirm")}
       />
 
-      <div className="space-y-5">
+      <div className="space-y-4">
         {candidates.map((candidate) => {
           const isSelected = candidate.id === selectedId;
           const description =
@@ -48,68 +47,68 @@ export function CandidatesScreen() {
               key={candidate.id}
               type="button"
               onClick={() => setSelectedId(candidate.id)}
-              className="w-full rounded-[24px] p-3 text-left transition-colors"
               style={{
-                background: isSelected ? "#dff0e4" : "var(--color-surface)",
-                border: isSelected ? "2px solid #2e765a" : "2px solid transparent",
+                background: isSelected ? "#DDEFE3" : "var(--color-white)",
+                border: isSelected
+                  ? "2px solid var(--color-primary)"
+                  : "2px solid transparent",
               }}
+              className="h-[142px] w-full rounded-[20px] p-3 text-left transition-colors"
             >
-            <div className="flex gap-4">
-              <div className="flex h-[118px] w-[112px] shrink-0 items-center justify-center overflow-hidden rounded-[16px] bg-[var(--color-mint-100)]">
-                {candidate.imageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={candidate.imageUrl}
-                    alt={candidate.name}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <span className="px-3 text-center text-xs text-[var(--color-text-secondary)]">
-                    이미지 없음
-                  </span>
-                )}
-              </div>
-
-              <div className="min-w-0 flex-1 py-3">
-                <div className="flex items-start justify-between gap-3">
-                  <h2 className="truncate text-lg font-extrabold text-[var(--color-text-primary)]">
-                    {candidate.name}
-                  </h2>
-                  <span
-                    className="rounded-full px-4 py-2 text-sm font-extrabold"
-                    style={{
-                      background:
-                        isSelected
-                          ? "var(--color-deep-green)"
-                          : "#eef5ec",
-                      color:
-                        isSelected
-                          ? "#ffffff"
-                          : "var(--color-deep-green)",
-                    }}
-                  >
-                    {candidate.confidence}%
-                  </span>
+              <div className="flex h-full gap-4">
+                <div className="h-[118px] w-[106px] shrink-0 overflow-hidden rounded-2xl bg-[#DCECE2]">
+                  {candidate.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={candidate.imageUrl}
+                      alt={candidate.name}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center px-2 text-center text-xs text-[var(--color-sub)]">
+                      이미지 없음
+                    </div>
+                  )}
                 </div>
-                <p className="mt-4 line-clamp-2 text-[13px] leading-relaxed text-[var(--color-text-secondary)]">
-                  {description}
-                </p>
-                <p className="mt-6 text-[13px] font-extrabold text-[var(--color-deep-green)]">
-                  {isSelected ? "선택됨" : "비교하기 ›"}
-                </p>
+
+                <div className="flex min-w-0 flex-1 flex-col justify-center gap-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <h2 className="m-0 truncate text-lg font-bold text-[var(--color-text)]">
+                      {candidate.name}
+                    </h2>
+                    <span
+                      style={
+                        isSelected
+                          ? { background: "var(--color-primary)", color: "var(--color-white)" }
+                          : { background: "#EEF3EA", color: "var(--color-primary)" }
+                      }
+                      className="flex h-[30px] w-[62px] shrink-0 items-center justify-center rounded-full text-xs font-semibold"
+                    >
+                      {candidate.confidence}%
+                    </span>
+                  </div>
+                  <p className="m-0 line-clamp-2 text-xs font-normal leading-relaxed text-[var(--color-sub)]">
+                    {description}
+                  </p>
+                  <p className="m-0 text-xs font-semibold text-[var(--color-primary)]">
+                    {isSelected ? "선택됨" : "비교하기 ›"}
+                  </p>
+                </div>
               </div>
-            </div>
             </button>
           );
         })}
       </div>
 
-      <div className="mt-8 rounded-[20px] bg-[#eef5ec] px-5 py-5 text-[13px] leading-relaxed text-[var(--color-text-secondary)]">
-        AI 결과는 확정이 아니며, 사용자가 고른 결과로 카드가 생성됩니다.
+      <div className="mt-8 rounded-[14px] bg-[#EEF3EA] px-[18px] py-3.5">
+        <p className="m-0 text-xs font-medium leading-relaxed text-[var(--color-sub)]">
+          AI 결과는 확정이 아니며, 사용자가 고른 결과로 카드가 생성됩니다.
+        </p>
       </div>
 
       <div className="mt-auto space-y-3 pt-6">
-        <PrimaryButton
+        <button
+          type="button"
           onClick={() =>
             router.push(
               selected.candidate.plantId === null
@@ -117,12 +116,18 @@ export function CandidatesScreen() {
                 : `/plants/${selected.candidate.plantId}`,
             )
           }
+          style={{ color: "var(--color-white)" }}
+          className="flex h-[54px] w-full items-center justify-center rounded-[20px] bg-[var(--color-primary)] text-base font-semibold"
         >
           {selected.name}으로 카드 만들기
-        </PrimaryButton>
-        <SecondaryButton onClick={() => router.push("/collection")}>
+        </button>
+        <button
+          type="button"
+          onClick={() => router.push("/collection")}
+          className="w-full py-3 text-center text-xs font-semibold text-[var(--color-primary)]"
+        >
           후보에 없어요 · 직접 검색
-        </SecondaryButton>
+        </button>
       </div>
     </div>
   );
