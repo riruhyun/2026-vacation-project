@@ -40,12 +40,14 @@ export default function BottomNav() {
   return (
     <nav
       style={{
-        position: "sticky",
+        position: "fixed",
         bottom: 0,
-        left: 0,
-        right: 0,
+        left: "50%",
+        transform: "translateX(-50%)",
+        width: "min(100vw, 480px)",
         background: "var(--color-bg)",
         borderTop: "1px solid var(--color-border)",
+        zIndex: 50,
         display: "flex",
         justifyContent: "space-around",
         padding: "10px 8px calc(10px + env(safe-area-inset-bottom))",
