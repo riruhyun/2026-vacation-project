@@ -1,9 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { IdentifyFlowHeader } from "@/components/identify/IdentifyFlowHeader";
-import { PrimaryButton } from "@/components/ui/PrimaryButton";
-import { SecondaryButton } from "@/components/ui/SecondaryButton";
+import PageHeader from "../../components/layout/PageHeader";
 
 const RETRY_TIPS = [
   { index: 1, title: "꽃", description: "꽃잎과 중심을 가까이" },
@@ -16,23 +14,24 @@ export function FailedScreen() {
 
   return (
     <div className="flex min-h-full flex-col">
-      <IdentifyFlowHeader
+      <PageHeader
         title="식별하기 어려워요"
         subtitle="사진에서 충분한 특징을 찾지 못했습니다."
+        showBack
         onBack={() => router.push("/capture")}
       />
 
       <section className="flex flex-col items-center pt-11 text-center">
-        <div className="flex h-[142px] w-[142px] items-center justify-center rounded-full bg-[#eef5ec]">
-          <span className="text-[64px] font-extrabold leading-none text-[var(--color-deep-green)]">
+        <div className="flex h-[140px] w-[140px] items-center justify-center rounded-full bg-[#EEF3EA]">
+          <span className="text-[58px] font-bold leading-none text-[var(--color-primary)]">
             ?
           </span>
         </div>
 
-        <h2 className="mt-9 text-[24px] font-extrabold leading-tight text-[var(--color-deep-green)]">
+        <h2 className="mt-9 text-[22px] font-bold leading-tight text-[var(--color-deep)]">
           다른 특징을 보여주세요
         </h2>
-        <p className="mt-5 max-w-[260px] text-[14px] leading-relaxed text-[var(--color-text-secondary)]">
+        <p className="mt-5 max-w-[260px] text-sm font-normal leading-relaxed text-[var(--color-sub)]">
           한 장의 사진보다 서로 다른 부위가 보이면 후보를 찾을 가능성이 높아져요.
         </p>
       </section>
@@ -41,15 +40,15 @@ export function FailedScreen() {
         {RETRY_TIPS.map((tip) => (
           <div
             key={tip.index}
-            className="flex items-center rounded-[18px] bg-white px-4 py-3"
+            className="flex items-center rounded-[18px] bg-[var(--color-white)] px-4 py-3"
           >
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[14px] bg-[var(--color-mint-100)] text-[13px] font-extrabold text-[var(--color-deep-green)]">
+            <span className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-xl bg-[#DDEFE3] text-xs font-bold text-[var(--color-primary)]">
               {tip.index}
             </span>
-            <strong className="ml-5 w-10 text-[14px] font-extrabold text-[var(--color-text-primary)]">
+            <strong className="ml-5 w-10 text-sm font-bold text-[var(--color-text)]">
               {tip.title}
             </strong>
-            <span className="ml-5 text-[13px] text-[var(--color-text-secondary)]">
+            <span className="ml-5 text-xs font-normal text-[var(--color-sub)]">
               {tip.description}
             </span>
           </div>
@@ -57,12 +56,21 @@ export function FailedScreen() {
       </div>
 
       <div className="mt-auto space-y-3 pt-8">
-        <PrimaryButton onClick={() => router.push("/capture")}>
+        <button
+          type="button"
+          onClick={() => router.push("/capture")}
+          style={{ color: "var(--color-white)" }}
+          className="flex h-[54px] w-full items-center justify-center rounded-[20px] bg-[var(--color-primary)] text-base font-semibold"
+        >
           사진 추가해서 다시 분석
-        </PrimaryButton>
-        <SecondaryButton onClick={() => router.push("/search")}>
+        </button>
+        <button
+          type="button"
+          onClick={() => router.push("/search")}
+          className="w-full py-3 text-center text-xs font-semibold text-[var(--color-primary)]"
+        >
           직접 이름 검색하기
-        </SecondaryButton>
+        </button>
       </div>
     </div>
   );
