@@ -24,16 +24,8 @@ export default function PageHeader({
   const router = useRouter();
 
   return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        marginBottom: "20px",
-        minHeight: "36px",
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+    <div className="mb-5 flex min-h-9 items-center justify-between">
+      <div className="flex items-center gap-2">
         {showBack && (
           <button
             onClick={() => {
@@ -44,47 +36,17 @@ export default function PageHeader({
               }
             }}
             aria-label="뒤로 가기"
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              padding: "4px",
-              display: "flex",
-              alignItems: "center",
-              color: "var(--color-text-primary)",
-            }}
+            className="flex items-center p-1 text-[#203229]"
           >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M15 18L9 12L15 6"
-                stroke="currentColor"
-                strokeWidth="2.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            <i className="ri-arrow-left-s-line text-[24px] leading-none" aria-hidden="true" />
           </button>
         )}
         <div>
-          <h1
-            style={{
-              fontSize: "20px",
-              fontWeight: 800,
-              margin: 0,
-              color: "var(--color-text-primary)",
-            }}
-          >
+          <h1 className="m-0 text-2xl font-bold text-[var(--color-deep)]">
             {title}
           </h1>
           {subtitle && (
-            <p
-              style={{
-                margin: "4px 0 0",
-                fontSize: "13px",
-                lineHeight: 1.5,
-                color: "var(--color-text-secondary)",
-              }}
-            >
+            <p className="m-0 mt-1 text-sm font-normal leading-[1.5] text-[var(--color-sub)]">
               {subtitle}
             </p>
           )}
