@@ -103,3 +103,22 @@ export default function PlantCard({
 
   return <Link href={link}>{content}</Link>;
 }
+
+// 기본 식물 아이콘
+function PlaceholderPlantIcon() {
+  return (
+    <svg width="40" height="40" viewBox="0 0 56 56" fill="none">
+      <path
+        d="M28 50V26"
+        stroke="var(--color-primary)"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+      <ellipse cx="20" cy="30" rx="8" ry="5" fill="var(--color-primary)" opacity="0.7" />
+      <ellipse cx="36" cy="24" rx="8" ry="5" fill="var(--color-primary)" opacity="0.7" />
+      <circle cx="28" cy="14" r="9" fill="#f2b5c4" />
+      <circle cx="20" cy="18" r="6" fill="#f6cfd8" />
+      <circle cx="36" cy="18" r="6" fill="#f6cfd8" />
+    </svg>
+  );
+}
