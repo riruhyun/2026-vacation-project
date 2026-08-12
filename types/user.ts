@@ -1,7 +1,10 @@
 export type Profile = {
   nickname: string | null
-  /** 누적 경험치. 레벨 계산은 게임 UI 담당이 프론트에서 처리합니다. */
+  /** 누적 경험치 */
   xp: number
+  level: number
+  currentLevelXp: number
+  xpToNextLevel: number
 }
 
 export interface UserProgress {

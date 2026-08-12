@@ -1,3 +1,5 @@
+import ProfileScreen from "./ProfileScreen";
+
 export default function ProfilePage() {
-  return null;
+  return <ProfileScreen />;
 }

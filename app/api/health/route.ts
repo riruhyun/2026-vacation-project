@@ -8,7 +8,7 @@ export function GET() {
     services: {
       supabase: Boolean(process.env.SUPABASE_SECRET_KEY),
       plantNet: Boolean(process.env.PLANTNET_API_KEY),
-      iNaturalist: true,
+      forest: Boolean(process.env.FOREST_API_KEY),
     },
   })
 }

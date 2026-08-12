@@ -25,6 +25,13 @@ export type ObservationDto = {
 export type CreateObservationResponseDto = {
   result: ObservationResult;
   observation: ObservationDto;
+  reward: {
+    xp: number;
+    totalXp: number;
+    level: number;
+    leveledUp: boolean;
+    plantCount: number;
+  };
 };
 
 export type CreateObservationInput = {

@@ -1,4 +1,4 @@
-import type { CandidateCardViewModel } from "@/types/identify";
+import type { CandidateCardViewModel } from "../../types/identify";
 
 interface CandidateCardProps {
   candidate: CandidateCardViewModel;

@@ -9,29 +9,14 @@
 }
 
 :root {
-  --color-bg: #F7F8F2;
-  --color-surface: #ffffff;
-
-  --color-deep-green: #1f4a3d;
-  --color-deep-green-dark: #163a30;
-  --color-accent: #c3d97e;
-  --color-accent-dark: #a9c25f;
-
-  --color-mint-100: #dcece2;
-  --color-cream-100: #f7ecc9;
-  --color-blush-100: #f6d9d6;
-
-  --color-text-primary: #1e2a24;
-  --color-text-secondary: #6b7570;
-  --color-text-muted: #97a099;
-  --color-border: #e7e4da;
-
-  --color-rarity-common-bg: #e4efe2;
-  --color-rarity-common-text: #4c7a5d;
-  --color-rarity-normal-bg: #f8ecc4;
-  --color-rarity-normal-text: #8a6d1f;
-  --color-rarity-rare-bg: #f6d9d6;
-  --color-rarity-rare-text: #b1494a;
+  --color-bg: #f7f8f2;
+  --color-deep: #173c2d;
+  --color-primary: #2f6b4f;
+  --color-lime: #ddeb98;
+  --color-sun: #f6e7a6;
+  --color-black-text: #203229;
+  --color-sub: #718078;
+  --color-white: #ffffff;
 
   --radius-card: 20px;
   --radius-button: 16px;
@@ -53,7 +38,7 @@ body {
 
 body {
   background: var(--color-bg);
-  color: var(--color-text-primary);
+  color: var(--color-text);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
@@ -94,6 +79,6 @@ button {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-border);
+  background: var(--color-sub);
   border-radius: var(--radius-pill);
 }

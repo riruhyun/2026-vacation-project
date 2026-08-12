@@ -2,7 +2,6 @@ import type { ObservationDto } from "@/types/observation";
 
 type ObservationRow = {
   id: string;
-  plant_id: number | null;
   scientific_name: string;
   display_name: string;
   image_path: string;
@@ -12,10 +11,11 @@ type ObservationRow = {
 export function toObservationDto(
   observation: ObservationRow,
   imageUrl: string,
+  plantId: number | null,
 ): ObservationDto {
   return {
     id: observation.id,
-    plantId: observation.plant_id,
+    plantId,
     scientificName: observation.scientific_name,
     displayName: observation.display_name,
     imagePath: observation.image_path,
