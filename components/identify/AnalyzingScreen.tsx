@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { IdentifyFlowHeader } from "@/components/identify/IdentifyFlowHeader";
+import PageHeader from "@/components/layout/PageHeader";
 import { identifyPlant } from "@/lib/api";
 import { dataUrlToFile } from "@/lib/data-url";
 import { getDraft, saveIdentifyResults } from "@/lib/identify-storage";
@@ -34,7 +34,7 @@ function ProgressRing({ progress }: { progress: number }) {
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="#e3f1e8"
+          stroke="#DDEFE3"
           strokeWidth={strokeWidth}
         />
         <circle
@@ -42,7 +42,7 @@ function ProgressRing({ progress }: { progress: number }) {
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="var(--color-deep-green)"
+          stroke="var(--color-primary)"
           strokeWidth={strokeWidth}
           strokeLinecap="round"
           strokeDasharray={circumference}
@@ -50,7 +50,7 @@ function ProgressRing({ progress }: { progress: number }) {
           className="transition-[stroke-dashoffset] duration-300"
         />
       </svg>
-      <span className="absolute text-2xl font-extrabold text-[var(--color-deep-green)]">
+      <span className="absolute text-2xl font-bold text-[var(--color-deep)]">
         {progress}%
       </span>
     </div>
@@ -116,14 +116,15 @@ export function AnalyzingScreen({ imageUrl }: AnalyzingScreenProps) {
 
   return (
     <div className="flex min-h-full flex-col">
-      <IdentifyFlowHeader
+      <PageHeader
         title="식물을 찾고 있어요"
         subtitle="꽃·잎·전체 형태를 비교하고 있습니다."
+        showBack
         onBack={() => router.push("/identify?step=confirm")}
       />
 
-      <section className="mx-auto w-[82%] overflow-hidden rounded-[20px]">
-        <div className="flex aspect-square items-center justify-center bg-[var(--color-mint-100)]">
+      <section className="mx-auto h-[330px] w-[282px] overflow-hidden rounded-[20px]">
+        <div className="flex h-[282px] w-full items-center justify-center bg-[#DCECE2]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={imageUrl}
@@ -131,7 +132,10 @@ export function AnalyzingScreen({ imageUrl }: AnalyzingScreenProps) {
             className="h-full w-full object-cover"
           />
         </div>
-        <div className="bg-[#315f4a] px-4 py-4 text-[13px] font-bold text-white">
+        <div
+          style={{ color: "var(--color-white)" }}
+          className="flex h-12 items-center bg-[var(--color-deep)] px-4 text-xs font-semibold"
+        >
           촬영한 식물 사진
         </div>
       </section>
@@ -139,17 +143,20 @@ export function AnalyzingScreen({ imageUrl }: AnalyzingScreenProps) {
       <div className="mt-10 flex flex-col items-center gap-7">
         <ProgressRing progress={progress} />
         <div className="text-center">
-          <p className="text-[16px] font-extrabold text-[var(--color-text-primary)]">
+          <p className="text-base font-semibold text-[var(--color-text)]">
             {statusMessage}
           </p>
-          <p className="mt-3 text-[13px] text-[var(--color-text-secondary)]">
+          <p className="mt-3 text-xs font-normal text-[var(--color-sub)]">
             보통 5~10초 정도 걸려요
           </p>
         </div>
       </div>
 
       <div className="mt-auto pt-8">
-        <div className="mx-auto w-[76%] rounded-full bg-white px-5 py-4 text-center text-[12px] font-bold text-[var(--color-deep-green)]">
+        <div
+          style={{ color: "var(--color-primary)" }}
+          className="mx-auto flex h-10 w-[262px] items-center justify-center rounded-full bg-[var(--color-white)] text-center text-xs font-medium"
+        >
           사진 확인&nbsp;&nbsp;✓&nbsp;&nbsp; 후보 검색&nbsp;&nbsp;·&nbsp;&nbsp; 정보 연결
         </div>
       </div>
