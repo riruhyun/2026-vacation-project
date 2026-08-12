@@ -1,8 +1,8 @@
-import { getOfficialPlant } from "@/data/official-plants";
-import { errorMessage, fail, ok } from "@/lib/server/http";
-import { getForestPlant } from "@/lib/server/forest";
-import { imageError } from "@/lib/server/image";
-import type { IdentifyResponseDto } from "@/types/identify";
+import { getOfficialPlant } from "../../../data/official-plants";
+import { errorMessage, fail, ok } from "../../../lib/server/http";
+import { getForestPlant } from "../../../lib/server/forest";
+import { imageError } from "../../../lib/server/image";
+import type { IdentifyResponseDto } from "../../../types/identify";
 
 export const runtime = "nodejs";
 

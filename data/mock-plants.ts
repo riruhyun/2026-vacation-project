@@ -6,9 +6,9 @@ import type {
   CollectionSummary,
   CollectedPlant,
   PlantSpecies,
-} from "@/types/plant";
-import type { UserProgress } from "@/types/user";
-import type { IdentifyCandidateDto } from "@/types/identify";
+} from "../types/plant";
+import type { UserProgress } from "../types/user";
+import type { IdentifyCandidateDto } from "../types/identify";
 
 export const mockPlantSpecies = PLANT_SPECIES;
 
