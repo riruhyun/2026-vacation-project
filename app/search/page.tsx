@@ -5,9 +5,8 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import PageHeader from "@/components/layout/PageHeader";
-import Button from "@/components/ui/Button";
-import { searchMockPlantSpecies } from "@/data/mock-plants";
+import PageHeader from "../../components/layout/PageHeader";
+import { searchMockPlantSpecies } from "../../data/mock-plants";
 
 export default function SearchPage() {
     const router = useRouter();
@@ -17,21 +16,15 @@ export default function SearchPage() {
     const results = useMemo(() => searchMockPlantSpecies(query), [query]);
 
     return (
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-            <PageHeader title="식물 이름 직접 찾기" showBack />
-
-            <p
-                style={{
-                    fontSize: "13px",
-                    color: "var(--color-text-secondary)",
-                    margin: "-8px 0 0",
-                }}
-            >
-                AI 후보에 없다면 이름이나 특징으로 검색하세요.
-            </p>
+        <div className="flex flex-col gap-4">
+            <PageHeader
+                title="식물 이름 직접 찾기"
+                subtitle="AI 후보에 없다면 이름이나 특징으로 검색하세요."
+                showBack
+            />
 
             {/* 검색창 */}
-            <div style={{ position: "relative" }}>
+            <div className="relative">
                 <input
                     type="text"
                     value={query}
@@ -40,14 +33,7 @@ export default function SearchPage() {
                         setSelectedId(null);
                     }}
                     placeholder="식물 이름이나 특징을 입력하세요"
-                    style={{
-                        width: "100%",
-                        padding: "14px 40px 14px 16px",
-                        borderRadius: "var(--radius-button)",
-                        border: "1.5px solid var(--color-deep-green)",
-                        fontSize: "15px",
-                        outline: "none",
-                    }}
+                    className="w-full rounded-[20px] border-[1.5px] border-[var(--color-primary)] bg-[var(--color-white)] py-3.5 pl-4 pr-10 text-sm outline-none"
                 />
                 {query && (
                     <button
@@ -56,19 +42,9 @@ export default function SearchPage() {
                             setSelectedId(null);
                         }}
                         aria-label="검색어 지우기"
-                        style={{
-                            position: "absolute",
-                            right: "12px",
-                            top: "50%",
-                            transform: "translateY(-50%)",
-                            background: "none",
-                            border: "none",
-                            cursor: "pointer",
-                            color: "var(--color-text-muted)",
-                            fontSize: "16px",
-                        }}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-sub)]"
                     >
-                        ✕
+                        <i className="ri-close-line text-base" aria-hidden="true" />
                     </button>
                 )}
             </div>
@@ -76,20 +52,13 @@ export default function SearchPage() {
             {/* 검색 결과 */}
             {query && (
                 <>
-                    <p style={{ fontSize: "14px", fontWeight: 700, margin: 0 }}>
+                    <p className="m-0 text-sm font-bold text-[var(--color-text)]">
                         검색 결과 {results.length}개
                     </p>
 
-                    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                    <div className="flex flex-col gap-2.5">
                         {results.length === 0 && (
-                            <p
-                                style={{
-                                    fontSize: "13px",
-                                    color: "var(--color-text-muted)",
-                                    padding: "24px 0",
-                                    textAlign: "center",
-                                }}
-                            >
+                            <p className="py-6 text-center text-xs text-[var(--color-sub)]">
                                 일치하는 식물을 찾지 못했어요. 다른 이름으로 검색해보세요.
                             </p>
                         )}
@@ -100,69 +69,33 @@ export default function SearchPage() {
                                 <button
                                     key={species.slug}
                                     onClick={() => setSelectedId(species.slug)}
-                                    style={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        gap: "14px",
-                                        padding: "14px",
-                                        background: "var(--color-surface)",
-                                        border: isSelected
-                                            ? "2px solid var(--color-deep-green)"
-                                            : "1px solid var(--color-border)",
-                                        borderRadius: "var(--radius-card)",
-                                        cursor: "pointer",
-                                        textAlign: "left",
-                                    }}
+                                    style={
+                                        isSelected
+                                            ? { border: "2px solid var(--color-primary)" }
+                                            : { border: "1px solid transparent" }
+                                    }
+                                    className="flex h-[112px] w-full items-center gap-3.5 rounded-2xl bg-[var(--color-white)] p-3.5 text-left"
                                 >
-                                    <div
-                                        style={{
-                                            width: "56px",
-                                            height: "56px",
-                                            flexShrink: 0,
-                                            borderRadius: "14px",
-                                            background: "var(--color-mint-100)",
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "center",
-                                        }}
-                                    >
+                                    <div className="flex h-[60px] w-[60px] shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[#DCECE2]">
                                         <SmallPlantIcon />
                                     </div>
 
-                                    <div style={{ flex: 1 }}>
-                                        <p style={{ fontSize: "15px", fontWeight: 700, margin: 0 }}>
+                                    <div className="flex-1">
+                                        <p className="m-0 text-base font-bold text-[var(--color-text)]">
                                             {species.koreanName}
                                         </p>
-                                        <p
-                                            style={{
-                                                fontSize: "12.5px",
-                                                fontStyle: "italic",
-                                                color: "var(--color-text-secondary)",
-                                                margin: "2px 0 4px",
-                                            }}
-                                        >
+                                        <p className="m-0 mt-0.5 mb-1 text-xs font-normal text-[var(--color-sub)]">
                                             {species.scientificName}
                                         </p>
-                                        <p
-                                            style={{
-                                                fontSize: "12.5px",
-                                                color: "var(--color-text-muted)",
-                                                margin: 0,
-                                            }}
-                                        >
+                                        <p className="m-0 text-xs font-medium text-[var(--color-primary)]">
                                             {species.season}
                                         </p>
                                     </div>
 
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                                        <path
-                                            d="M9 6L15 12L9 18"
-                                            stroke="var(--color-text-muted)"
-                                            strokeWidth="2"
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                        />
-                                    </svg>
+                                    <i
+                                        className="ri-arrow-right-s-line text-lg text-[var(--color-sub)]"
+                                        aria-hidden="true"
+                                    />
                                 </button>
                             );
                         })}
@@ -171,31 +104,21 @@ export default function SearchPage() {
             )}
 
             {/* 안내 문구 + 선택 버튼 */}
-            <div
-                style={{
-                    background: "#f2f0e9",
-                    borderRadius: "var(--radius-card)",
-                    padding: "14px 18px",
-                    marginTop: "4px",
-                }}
-            >
-                <p
-                    style={{
-                        fontSize: "12.5px",
-                        color: "var(--color-text-muted)",
-                        margin: 0,
-                        lineHeight: 1.5,
-                    }}
-                >
+            <div className="mt-1 rounded-[20px] bg-[#EEF3EA] px-[18px] py-3.5">
+                <p className="m-0 text-xs font-normal leading-relaxed text-[var(--color-sub)]">
                     검색으로 선택한 결과는 &quot;직접 선택&quot;으로 기록됩니다.
                 </p>
             </div>
 
-            <Button
-                variant="primary"
-                fullWidth
+            <button
+                type="button"
                 disabled={!selectedId}
-                style={{ opacity: selectedId ? 1 : 0.4, cursor: selectedId ? "pointer" : "not-allowed" }}
+                style={{
+                    color: "var(--color-white)",
+                    opacity: selectedId ? 1 : 0.4,
+                    cursor: selectedId ? "pointer" : "not-allowed",
+                }}
+                className="flex h-[54px] w-full items-center justify-center rounded-[20px] bg-[var(--color-primary)] text-base font-semibold"
                 onClick={() => {
                     if (!selectedId) return;
                     // TODO: 실제로는 카드 생성 흐름(예: /capture/result?slug=...)으로 이동
@@ -203,7 +126,7 @@ export default function SearchPage() {
                 }}
             >
                 선택한 식물로 카드 만들기
-            </Button>
+            </button>
         </div>
     );
 }
@@ -213,12 +136,12 @@ function SmallPlantIcon() {
         <svg width="30" height="30" viewBox="0 0 56 56" fill="none">
             <path
                 d="M28 50V26"
-                stroke="var(--color-deep-green)"
+                stroke="var(--color-primary)"
                 strokeWidth="3"
                 strokeLinecap="round"
             />
-            <ellipse cx="20" cy="30" rx="8" ry="5" fill="var(--color-deep-green)" opacity="0.7" />
-            <ellipse cx="36" cy="24" rx="8" ry="5" fill="var(--color-deep-green)" opacity="0.7" />
+            <ellipse cx="20" cy="30" rx="8" ry="5" fill="var(--color-primary)" opacity="0.7" />
+            <ellipse cx="36" cy="24" rx="8" ry="5" fill="var(--color-primary)" opacity="0.7" />
             <circle cx="28" cy="14" r="9" fill="#f2b5c4" />
             <circle cx="20" cy="18" r="6" fill="#f6cfd8" />
             <circle cx="36" cy="18" r="6" fill="#f6cfd8" />
