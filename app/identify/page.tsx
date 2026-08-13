@@ -1,72 +1,102 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useSyncExternalStore } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ConfirmScreen } from "../../components/identify/ConfirmScreen";
-import { AnalyzingScreen } from "../../components/identify/AnalyzingScreen";
-import { CandidatesScreen } from "../../components/identify/CandidatesScreen";
-import { FailedScreen } from "../../components/identify/FailedScreen";
-import { getDraft } from "../../lib/identify-storage";
-import type { ObservationDraft } from "../../types/observation";
+import { AnalyzingScreen } from "@/components/identify/AnalyzingScreen";
+import { CandidatesScreen } from "@/components/identify/CandidatesScreen";
+import { ConfirmScreen } from "@/components/identify/ConfirmScreen";
+import { FailedScreen } from "@/components/identify/FailedScreen";
+import { IdentifyResultScreen } from "@/components/identify/IdentifyResultScreen";
+import {
+  readIdentifyCandidates,
+  readIdentifyDraft,
+  readIdentifyResult,
+  type IdentifyDraft,
+} from "@/lib/identify-storage";
+import type { IdentifyResponseDto, IdentifyStep } from "@/types/identify";
+import type { CreateObservationResponseDto } from "@/types/observation";
 
-type IdentifyStep = "confirm" | "analyzing" | "candidates" | "failed";
+const STEPS: readonly IdentifyStep[] = [
+  "confirm",
+  "analyzing",
+  "candidates",
+  "failed",
+  "result",
+];
+
+function LoadingState() {
+  return <div className="min-h-60" aria-label="화면 불러오는 중" />;
+}
+
+function subscribe() {
+  return () => {};
+}
+
+let cachedSignature = "";
+let cachedSession: {
+  draft: IdentifyDraft | null;
+  candidates: IdentifyResponseDto | null;
+  result: CreateObservationResponseDto | null;
+} | null = null;
+
+function readSession(step: string) {
+  const nextSession = {
+    draft: readIdentifyDraft(),
+    candidates: readIdentifyCandidates(),
+    result: readIdentifyResult(),
+  };
+  const signature = JSON.stringify([step, nextSession]);
+  if (cachedSession && cachedSignature === signature) return cachedSession;
+  cachedSignature = signature;
+  cachedSession = nextSession;
+  return cachedSession;
+}
 
 function IdentifyContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const step = (searchParams.get("step") ?? "confirm") as IdentifyStep;
-
-  // 서버와 클라이언트의 첫 렌더링 결과를 동일하게 맞추기 위해
-  // sessionStorage는 useEffect(클라이언트 전용)에서만 읽는다.
-  const [draft, setDraft] = useState<ObservationDraft | null>(null);
-  const [isDraftLoaded, setIsDraftLoaded] = useState(false);
-
-  useEffect(() => {
-    setDraft(getDraft());
-    setIsDraftLoaded(true);
-  }, []);
+  const requestedStep = searchParams.get("step") ?? "confirm";
+  const step = STEPS.includes(requestedStep as IdentifyStep)
+    ? (requestedStep as IdentifyStep)
+    : null;
+  const session = useSyncExternalStore(
+    subscribe,
+    () => readSession(requestedStep),
+    () => null,
+  );
 
   useEffect(() => {
-    if (!isDraftLoaded) return;
-    if (!draft && step !== "candidates" && step !== "failed") {
-      router.replace("/capture");
-    }
-  }, [draft, isDraftLoaded, step, router]);
+    if (!session) return;
+    const missingRequiredState =
+      !step ||
+      ((step === "confirm" || step === "analyzing") && !session.draft) ||
+      (step === "candidates" && (!session.draft || !session.candidates)) ||
+      (step === "failed" && !session.draft) ||
+      (step === "result" && (!session.draft || !session.result));
+    if (missingRequiredState) router.replace("/capture");
+  }, [router, session, step]);
 
-  if (!isDraftLoaded || (!draft && step !== "candidates" && step !== "failed")) {
-    return (
-      <div className="flex min-h-full items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--color-primary)] border-t-transparent" />
-      </div>
-    );
-  }
+  if (!session || !step) return <LoadingState />;
 
-  switch (step) {
-    case "confirm":
-      return draft ? (
-        <ConfirmScreen imageUrl={draft.imageDataUrl} initialPart={draft.part} />
-      ) : null;
-    case "analyzing":
-      return draft ? <AnalyzingScreen imageUrl={draft.imageDataUrl} /> : null;
-    case "candidates":
-      return <CandidatesScreen />;
-    case "failed":
-      return <FailedScreen />;
-    default:
-      router.replace("/capture");
-      return null;
+  if (step === "confirm" && session.draft) {
+    return <ConfirmScreen imageUrl={session.draft.imageUrl} initialOrgan={session.draft.organ} />;
   }
+  if (step === "analyzing" && session.draft) {
+    return <AnalyzingScreen imageUrl={session.draft.imageUrl} />;
+  }
+  if (step === "candidates" && session.draft && session.candidates) {
+    return <CandidatesScreen candidates={session.candidates.candidates} />;
+  }
+  if (step === "failed") return <FailedScreen />;
+  if (step === "result" && session.result) {
+    return <IdentifyResultScreen response={session.result} />;
+  }
+  return <LoadingState />;
 }
 
 export default function IdentifyPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-full items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--color-primary)] border-t-transparent" />
-        </div>
-      }
-    >
+    <Suspense fallback={<LoadingState />}>
       <IdentifyContent />
     </Suspense>
   );

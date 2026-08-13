@@ -2,7 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { saveDraft } from "@/lib/identify-storage";
+import { captureImageError } from "@/lib/data-url";
+import {
+  clearIdentifySession,
+  writeIdentifyDraft,
+} from "@/lib/identify-storage";
 
 export function useCaptureSession() {
   const router = useRouter();
@@ -12,6 +16,11 @@ export function useCaptureSession() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [cameraReady, setCameraReady] = useState(false);
   const [isMirrored, setIsMirrored] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    clearIdentifySession();
+  }, []);
 
   useEffect(() => {
     if (previewUrl) return;
@@ -54,13 +63,24 @@ export function useCaptureSession() {
 
   const handleFileSelect = useCallback((file: File | undefined) => {
     if (!file) return;
+    const validationError = captureImageError(file);
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+    setError(null);
 
     const reader = new FileReader();
     reader.onload = (event) => {
       const dataUrl = event.target?.result as string;
+      clearIdentifySession();
+      if (!writeIdentifyDraft(dataUrl, "auto")) {
+        setError("사진을 임시 저장하지 못했어요. 더 작은 사진을 선택해 주세요.");
+        return;
+      }
       setPreviewUrl(dataUrl);
-      saveDraft(dataUrl);
     };
+    reader.onerror = () => setError("사진을 읽지 못했어요. 다른 사진을 선택해 주세요.");
     reader.readAsDataURL(file);
   }, []);
 
@@ -89,8 +109,13 @@ export function useCaptureSession() {
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
 
+    clearIdentifySession();
+    if (!writeIdentifyDraft(dataUrl, "auto")) {
+      setError("사진을 임시 저장하지 못했어요. 갤러리에서 더 작은 사진을 선택해 주세요.");
+      return;
+    }
+    setError(null);
     setPreviewUrl(dataUrl);
-    saveDraft(dataUrl);
     router.push("/identify?step=confirm");
   }, [cameraReady, isMirrored, previewUrl, router]);
 
@@ -104,6 +129,7 @@ export function useCaptureSession() {
     previewUrl,
     cameraReady,
     isMirrored,
+    error,
     handleFileSelect,
     handleCapture,
     openGallery,

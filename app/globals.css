@@ -9,18 +9,23 @@
 }
 
 :root {
-  --color-bg: #f7f8f2;
-  --color-deep: #173c2d;
+  --color-background: #f7f8f2;
+  --color-surface: #ffffff;
   --color-primary: #2f6b4f;
-  --color-lime: #ddeb98;
-  --color-sun: #f6e7a6;
-  --color-black-text: #203229;
-  --color-sub: #718078;
-  --color-white: #ffffff;
+  --color-primary-strong: #173c2d;
+  --color-accent: #ddeb98;
+  --color-text: #203229;
+  --color-text-muted: #718078;
+  --color-border: #dfe5df;
+  --color-info-surface: #eef3ea;
+  --color-placeholder: #dcece2;
+  --color-rarity-common-surface: #ddeb98;
+  --color-rarity-uncommon-surface: #f6e7a6;
+  --color-rarity-rare-surface: #c3d9ce;
 
   --radius-card: 20px;
-  --radius-button: 16px;
-  --radius-pill: 999px;
+  --radius-control: 16px;
+  --radius-pill: 9999px;
 
   --font-sans: "Pretendard", -apple-system, BlinkMacSystemFont, "Malgun Gothic",
     sans-serif;
@@ -37,7 +42,7 @@ body {
 }
 
 body {
-  background: var(--color-bg);
+  background: var(--color-background);
   color: var(--color-text);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
@@ -57,7 +62,7 @@ button {
   max-width: 480px;
   margin: 0 auto;
   min-height: 100dvh;
-  background: var(--color-bg);
+  background: var(--color-background);
   position: relative;
   display: flex;
   flex-direction: column;
@@ -79,6 +84,6 @@ button {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-sub);
+  background: var(--color-text-muted);
   border-radius: var(--radius-pill);
 }

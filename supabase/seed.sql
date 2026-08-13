@@ -1,2 +1,2 @@
--- 공식 50종은 data/official-plants.ts에서 관리합니다.
+-- 공식 50종은 data/plants.ts에서 관리합니다.
 -- Supabase에는 사용자 진행도와 관찰 기록만 저장하므로 식물 seed가 필요하지 않습니다.

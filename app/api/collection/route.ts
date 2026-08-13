@@ -1,4 +1,4 @@
-import { getOfficialPlant, OFFICIAL_PLANTS } from '@/data/official-plants'
+import { getOfficialPlant, OFFICIAL_PLANTS } from '@/data/plants'
 import { errorMessage, fail, ok } from '@/lib/server/http'
 import { imageUrl } from '@/lib/server/image'
 import { supabase } from '@/lib/server/supabase'
@@ -43,11 +43,13 @@ export async function GET(request: Request) {
       counts.map((item) => [item.scientific_name, item.count]),
     )
     const latestByName = new Map<string, ObservationRow>()
+    const firstByName = new Map<string, ObservationRow>()
 
     for (const item of observations) {
       if (!latestByName.has(item.scientific_name)) {
         latestByName.set(item.scientific_name, item)
       }
+      firstByName.set(item.scientific_name, item)
     }
 
     const collection = OFFICIAL_PLANTS.map((plant) => {
@@ -62,6 +64,8 @@ export async function GET(request: Request) {
         collected: count > 0,
         observationCount: count,
         representativeImageUrl: latest ? imageUrl(latest.image_path) : null,
+        firstObservedAt: firstByName.get(plant.scientificName)?.observed_at || null,
+        lastObservedAt: latest?.observed_at || null,
       }
     })
 
@@ -85,10 +89,11 @@ export async function GET(request: Request) {
       summary: {
         total,
         collected,
+        totalObservations: counts.reduce((sum, item) => sum + item.count, 0),
         completionRate: total ? Math.round((collected / total) * 100) : 0,
       },
-      plants: collection,
-      others,
+      officialPlants: collection,
+      otherFindings: others,
     })
   } catch (error) {
     return fail('도감 조회 중 오류가 발생했습니다.', 500, errorMessage(error))

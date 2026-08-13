@@ -1,106 +1,88 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
+import Link from "next/link";
 import PageHeader from "@/components/layout/PageHeader";
 import PlantCard from "@/components/plants/PlantCard";
-import {
-  mockCollectedPlants,
-  mockCollectionSummary,
-  mockPlantSpecies,
-} from "@/data/mock-plants";
-import type { PlantCategory } from "@/types/domain";
+import type { CollectionResponseDto } from "@/types/plant";
 
-type FilterTab = "전체" | PlantCategory;
+type CollectionTab = "official" | "other";
 
-const FILTER_TABS: FilterTab[] = ["전체", "꽃", "풀", "나무"];
-
-const GRID_IMAGES = [
-  "/plants/example1.jpg",
-  "/plants/example2.webp",
-  "/plants/example3.jpg",
-];
-
-export default function CollectionScreen() {
-  const router = useRouter();
-  const [activeTab, setActiveTab] = useState<FilterTab>("전체");
-
-  const collectedIds = useMemo(
-    () => new Set(mockCollectedPlants.map((plant) => plant.slug)),
-    [],
-  );
-
-  const filteredSpecies = useMemo(() => {
-    return mockPlantSpecies.filter(
-      (species) => activeTab === "전체" || species.category === activeTab,
-    );
-  }, [activeTab]);
+export default function CollectionScreen({ data }: { data: CollectionResponseDto }) {
+  const [activeTab, setActiveTab] = useState<CollectionTab>("official");
 
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
         title="나의 식물 도감"
         action={
-          <button
-            type="button"
-            onClick={() => {
-              router.push("/search");
-            }}
-            className="rounded-full bg-[var(--color-white)] px-4 py-2 text-xs font-semibold text-[var(--color-primary)]"
-          >
+          <Link href="/search" className="rounded-full bg-[var(--color-surface)] px-4 py-2 text-xs font-semibold text-[var(--color-primary)]">
             검색
-          </button>
+          </Link>
         }
       />
 
-      <p className="-mt-2 text-sm text-[var(--color-sub)]">
-        {mockCollectionSummary.totalSpeciesFound}종 발견 · 총{" "}
-        {mockCollectionSummary.totalObservations}회 관찰
+      <p className="-mt-2 text-sm text-[var(--color-text-muted)]">
+        공식 {data.summary.collected}/{data.summary.total}종 수집 · 총 {data.summary.totalObservations}회 관찰
       </p>
 
-      <div className="flex gap-2">
-        {FILTER_TABS.map((tab) => {
-          const active = tab === activeTab;
-
-          return (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => setActiveTab(tab)}
-              style={
-                active
-                  ? { background: "var(--color-primary)", color: "var(--color-white)" }
-                  : { background: "var(--color-white)", color: "var(--color-sub)" }
-              }
-              className="flex h-[30px] w-[70px] items-center justify-center rounded-[15px] text-xs font-semibold"
-            >
-              {tab}
-            </button>
-          );
-        })}
+      <div className="grid grid-cols-2 gap-2" role="tablist" aria-label="도감 분류">
+        {([
+          ["official", "공식 도감 50종"],
+          ["other", "기타 발견"],
+        ] as const).map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === value}
+            onClick={() => setActiveTab(value)}
+            className={`rounded-[var(--radius-pill)] px-4 py-2 text-sm font-semibold ${
+              activeTab === value
+                ? "bg-[var(--color-primary)] text-[var(--color-surface)]"
+                : "bg-[var(--color-surface)] text-[var(--color-text-muted)]"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        {filteredSpecies.map((species, index) => {
-          const collected = mockCollectedPlants.find(
-            (plant) => plant.slug === species.slug,
-          );
-          const isLocked = !collectedIds.has(species.slug);
-
-          return (
+      {activeTab === "official" ? (
+        <div className="grid grid-cols-2 gap-4">
+          {data.officialPlants.map((plant) => (
             <PlantCard
-              key={species.slug}
-              slug={species.slug}
-              koreanName={species.koreanName}
-              rarity={species.rarity}
-              observationCount={collected?.observationCount}
-              isLocked={isLocked}
+              key={plant.id}
+              id={plant.id}
+              koreanName={plant.koreanName}
+              scientificName={plant.scientificName}
+              rarity={plant.rarity}
+              observationCount={plant.observationCount}
+              imageUrl={plant.representativeImageUrl ?? undefined}
+              isLocked={!plant.collected}
               size="lg"
-              imageUrl={isLocked ? undefined : GRID_IMAGES[index % GRID_IMAGES.length]}
             />
-          );
-        })}
-      </div>
+          ))}
+        </div>
+      ) : data.otherFindings.length > 0 ? (
+        <div className="grid grid-cols-2 gap-4">
+          {data.otherFindings.map((finding) => (
+            <PlantCard
+              key={finding.scientificName}
+              koreanName={finding.displayName}
+              scientificName={finding.scientificName}
+              observationCount={finding.observationCount}
+              imageUrl={finding.representativeImageUrl}
+              href={`/findings/${encodeURIComponent(finding.scientificName)}`}
+              size="lg"
+            />
+          ))}
+        </div>
+      ) : (
+        <p className="rounded-[var(--radius-card)] bg-[var(--color-info-surface)] px-5 py-8 text-center text-sm text-[var(--color-text-muted)]">
+          아직 기타 식물 발견 기록이 없어요.
+        </p>
+      )}
     </div>
   );
 }

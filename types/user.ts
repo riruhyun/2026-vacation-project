@@ -1,17 +1,12 @@
+import type { ObservationDto } from "./observation"
+import type { CollectionPlantDto, OtherFindingDto } from "./plant"
+
 export type Profile = {
   nickname: string | null
   /** 누적 경험치 */
   xp: number
   level: number
   currentLevelXp: number
-  xpToNextLevel: number
-}
-
-export interface UserProgress {
-  nickname: string
-  level: number
-  levelTitle: string
-  currentXp: number
   xpToNextLevel: number
 }
 
@@ -27,4 +22,17 @@ export type ProfileStats = {
 export type ProfileResponse = {
   profile: Profile
   stats: ProfileStats
+}
+
+export type HomeData = {
+  profile: Profile
+  levelTitle: string
+  totalObservations: number
+  completionRate: number
+  recentPlants: Array<CollectionPlantDto | OtherFindingDto>
+}
+
+export type ProfilePageData = ProfileResponse & {
+  levelTitle: string
+  recentObservations: ObservationDto[]
 }

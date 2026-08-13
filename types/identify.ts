@@ -1,4 +1,11 @@
-import type { PlantId, PlantSlug, PlantStage, RarityCode } from "./domain";
+import type { PlantId, PlantStage, RarityCode } from "./domain";
+
+export type IdentifyStep =
+  | "confirm"
+  | "analyzing"
+  | "candidates"
+  | "failed"
+  | "result";
 
 export type MatchType = "exact" | null;
 
@@ -22,33 +29,3 @@ export type IdentifyResponseDto = {
   candidates: IdentifyCandidateDto[];
   remainingRequests: number | null;
 };
-
-export type CandidateCardViewModel = {
-  id: string;
-  name: string;
-  confidence: number;
-  description: string;
-  imageUrl: string | null;
-  candidate: IdentifyCandidateDto;
-};
-
-export interface NewPlantRewardViewModel {
-  slug: PlantSlug;
-  koreanName: string;
-  scientificName: string;
-  rarity: RarityCode;
-  photoUrl: string;
-  discoveredAt: string;
-  baseXp: number;
-  rarityBonusXp: number;
-}
-
-export interface DuplicateObservationViewModel {
-  slug: PlantSlug;
-  koreanName: string;
-  photoUrl: string;
-  observedAt: string;
-  observationCount: number;
-  rewardXp: number;
-  canReplaceCoverPhoto: boolean;
-}

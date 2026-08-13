@@ -1,41 +1,9 @@
 import type {
   ObservationId,
   PlantId,
-  PlantSlug,
-  PlantCategory,
   PlantStage,
   RarityCode,
 } from "./domain";
-
-export interface PlantSpecies {
-  slug: PlantSlug;
-  koreanName: string;
-  scientificName: string;
-  category: PlantCategory;
-  rarity: RarityCode;
-  description: string;
-  season?: string;
-  imageUrl: string;
-}
-
-export interface CollectedPlant {
-  slug: PlantSlug;
-  koreanName: string;
-  scientificName: string;
-  category: PlantSpecies["category"];
-  rarity: RarityCode;
-  description: string;
-  userPhotoUrl: string;
-  firstFoundAt: string;
-  observationCount: number;
-}
-
-export interface CollectionSummary {
-  totalSpeciesFound: number;
-  totalOfficialSpecies: number;
-  totalObservations: number;
-  completionRate: number;
-}
 
 export type CollectionPlantDto = {
   id: PlantId;
@@ -46,6 +14,8 @@ export type CollectionPlantDto = {
   collected: boolean;
   observationCount: number;
   representativeImageUrl: string | null;
+  firstObservedAt: string | null;
+  lastObservedAt: string | null;
 };
 
 export type OtherFindingDto = {
@@ -60,11 +30,33 @@ export type CollectionResponseDto = {
   summary: {
     total: number;
     collected: number;
+    totalObservations: number;
     completionRate: number;
   };
-  plants: CollectionPlantDto[];
-  others: OtherFindingDto[];
+  officialPlants: CollectionPlantDto[];
+  otherFindings: OtherFindingDto[];
 };
+
+export interface ForestPlantDetailDto {
+  koreanName: string;
+  scientificName: string;
+  description: string | null;
+  informationSource: "산림청 국립수목원";
+  informationSourceUrl: "https://www.data.go.kr/data/15143513/openapi.do";
+}
+
+export interface PlantDetailScreenData {
+  official: boolean;
+  id?: PlantId;
+  koreanName: string;
+  scientificName: string;
+  description: string;
+  imageUrl: string | null;
+  rarity: RarityCode | null;
+  observationCount: number;
+  firstObservedAt: string;
+  informationSource: string;
+}
 
 export type PlantDetailResponseDto = {
   plant: {

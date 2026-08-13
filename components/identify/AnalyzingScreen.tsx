@@ -22,7 +22,7 @@ function ProgressRing({ progress }: { progress: number }) {
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="#DDEFE3"
+          stroke="var(--color-placeholder)"
           strokeWidth={strokeWidth}
         />
         <circle
@@ -38,7 +38,7 @@ function ProgressRing({ progress }: { progress: number }) {
           className="transition-[stroke-dashoffset] duration-300"
         />
       </svg>
-      <span className="absolute text-2xl font-bold text-[var(--color-deep)]">
+      <span className="absolute text-2xl font-bold text-[var(--color-primary-strong)]">
         {progress}%
       </span>
     </div>
@@ -51,6 +51,7 @@ export function AnalyzingScreen({ imageUrl }: AnalyzingScreenProps) {
   return (
     <div className="flex min-h-full flex-col">
       <PageHeader
+        variant="identify"
         title="식물을 찾고 있어요"
         subtitle="꽃·잎·전체 형태를 비교하고 있습니다."
         showBack
@@ -58,7 +59,7 @@ export function AnalyzingScreen({ imageUrl }: AnalyzingScreenProps) {
       />
 
       <section className="mx-auto h-[330px] w-[282px] overflow-hidden rounded-[20px]">
-        <div className="flex h-[282px] w-full items-center justify-center bg-[#DCECE2]">
+        <div className="flex h-[282px] w-full items-center justify-center bg-[var(--color-placeholder)]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={imageUrl}
@@ -66,10 +67,7 @@ export function AnalyzingScreen({ imageUrl }: AnalyzingScreenProps) {
             className="h-full w-full object-cover"
           />
         </div>
-        <div
-          style={{ color: "var(--color-white)" }}
-          className="flex h-12 items-center bg-[var(--color-deep)] px-4 text-xs font-semibold"
-        >
+        <div className="flex h-12 items-center bg-[var(--color-primary-strong)] px-4 text-xs font-semibold text-[var(--color-surface)]">
           촬영한 식물 사진
         </div>
       </section>
@@ -80,17 +78,14 @@ export function AnalyzingScreen({ imageUrl }: AnalyzingScreenProps) {
           <p className="text-base font-semibold text-[var(--color-text)]">
             {statusMessage}
           </p>
-          <p className="mt-3 text-xs font-normal text-[var(--color-sub)]">
+          <p className="mt-3 text-xs font-normal text-[var(--color-text-muted)]">
             보통 5~10초 정도 걸려요
           </p>
         </div>
       </div>
 
       <div className="mt-auto pt-8">
-        <div
-          style={{ color: "var(--color-primary)" }}
-          className="mx-auto flex h-10 w-[262px] items-center justify-center rounded-full bg-[var(--color-white)] text-center text-xs font-medium"
-        >
+        <div className="mx-auto flex h-10 w-[262px] items-center justify-center rounded-full bg-[var(--color-surface)] text-center text-xs font-medium text-[var(--color-primary)]">
           사진 확인&nbsp;&nbsp;✓&nbsp;&nbsp; 후보 검색&nbsp;&nbsp;·&nbsp;&nbsp; 정보 연결
         </div>
       </div>

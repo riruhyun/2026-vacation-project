@@ -1,12 +1,11 @@
 export type PlantId = number;
 export type ObservationId = string;
-export type PlantSlug = string;
 export type PlantStage = 1 | 2 | 3;
 
 export type RarityCode = "common" | "uncommon" | "rare";
 export type RarityLabel = "흔함" | "보통" | "드묾";
-export type PlantCategory = "꽃" | "풀" | "나무";
-export type PlantPart = "auto" | "flower" | "leaf" | "fruit";
+export const PLANT_ORGANS = ["auto", "flower", "leaf", "fruit"] as const;
+export type PlantOrgan = (typeof PLANT_ORGANS)[number];
 
 export const RARITY_LABEL = {
   common: "흔함",

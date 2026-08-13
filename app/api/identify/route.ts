@@ -1,8 +1,11 @@
-import { getOfficialPlant } from "../../../data/official-plants";
-import { errorMessage, fail, ok } from "../../../lib/server/http";
-import { getForestPlant } from "../../../lib/server/forest";
-import { imageError } from "../../../lib/server/image";
-import type { IdentifyResponseDto } from "../../../types/identify";
+import { getOfficialPlant } from "@/data/plants";
+import { PLANT_ORGANS } from "@/types/domain";
+import { getForestPlant } from "@/lib/server/forest";
+import { errorMessage, fail, ok } from "@/lib/server/http";
+import { imageError } from "@/lib/server/image";
+import type { IdentifyResponseDto } from "@/types/identify";
+
+const PLANTNET_ORGANS = PLANT_ORGANS.filter((organ) => organ !== "auto");
 
 export const runtime = "nodejs";
 
@@ -38,8 +41,16 @@ export async function POST(request: Request) {
     }
 
     const image = form.get("image");
+    const organ = form.get("organ");
 
     if (!(image instanceof File)) return fail("image 파일이 필요합니다.");
+    if (
+      organ !== null &&
+      (typeof organ !== "string" ||
+        (organ !== "auto" && !PLANTNET_ORGANS.some((value) => value === organ)))
+    ) {
+      return fail("지원하지 않는 식물 부위입니다.", 400);
+    }
 
     const validationError = imageError(image);
     if (validationError) return fail(validationError);
@@ -49,6 +60,9 @@ export async function POST(request: Request) {
 
     const plantNetForm = new FormData();
     plantNetForm.append("images", image, image.name || "plant.jpg");
+    if (typeof organ === "string" && organ !== "auto") {
+      plantNetForm.append("organs", organ);
+    }
 
     const url = new URL("https://my-api.plantnet.org/v2/identify/all");
     url.searchParams.set("api-key", apiKey);

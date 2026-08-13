@@ -1,6 +1,6 @@
-import { getOfficialPlant, OFFICIAL_PLANTS } from '@/data/official-plants'
+import { getOfficialPlant, OFFICIAL_PLANTS } from '@/data/plants'
 import { errorMessage, fail, ok } from '@/lib/server/http'
-import { levelProgress } from '@/lib/server/progress'
+import { levelProgress } from '@/lib/progress'
 import { supabase } from '@/lib/server/supabase'
 import { userIdFrom } from '@/lib/server/user'
 

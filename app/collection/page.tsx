@@ -1,11 +1,7 @@
-import CollectionEmptyState from "@/components/collection/CollectionEmptyState";
 import CollectionScreen from "@/components/collection/CollectionScreen";
-import { mockCollectedPlants } from "@/data/mock-plants";
+import { getCollectionData } from "@/lib/data";
 
-export default function CollectionPage() {
-  if (mockCollectedPlants.length === 0) {
-    return <CollectionEmptyState />;
-  }
-
-  return <CollectionScreen />;
+export default async function CollectionPage() {
+  const data = await getCollectionData();
+  return <CollectionScreen data={data} />;
 }

@@ -1,108 +1,62 @@
-import Link from "next/link";
+import { RiUser3Fill } from "@remixicon/react";
 import PageHeader from "@/components/layout/PageHeader";
+import ProgressBar from "@/components/home/ProgressBar";
+import type { ProfilePageData } from "@/types/user";
 
-const RECENT_ACTIVITIES = [
-  { id: 1, text: "산철쭉을 새로 발견했어요", time: "오늘", dotColor: "var(--color-primary)" },
-  { id: 2, text: "민들레를 다시 관찰했어요", time: "2일 전", dotColor: "var(--color-sun)" },
-  { id: 3, text: "레벨 3에 도달했어요", time: "4일 전", dotColor: "var(--color-sun)" },
-];
+export default function ProfileScreen({ data }: { data: ProfilePageData }) {
+  const { profile, stats, recentObservations, levelTitle } = data;
 
-export default function ProfileScreen() {
-  const name = "홍길동";
-  const level = 3;
-  const levelTitle = "새싹 관찰자";
-  const xp = 320;
-  const xpMax = 500;
-  const xpPercent = Math.min(100, Math.round((xp / xpMax) * 100));
-
-  const stats = [
-    { label: "발견한 종", value: 7 },
-    { label: "관찰 기록", value: 12 },
-    { label: "현재 레벨", value: level },
+  const cards = [
+    { label: "공식 발견", value: stats.officialPlants },
+    { label: "관찰 기록", value: stats.totalObservations },
+    { label: "현재 레벨", value: profile.level },
   ];
 
   return (
-    <div className="flex flex-col gap-10">
-      <PageHeader
-        title="내 프로필"
-        action={
-          <Link href="/settings" className="text-xs font-normal text-[var(--color-sub)]">
-            설정
-          </Link>
-        }
-      />
+    <div className="flex flex-col gap-8">
+      <PageHeader title="마이페이지" />
+      {/* TODO: 백엔드 프로필 수정 범위가 확정되면 설정 진입점을 복원한다. */}
 
-      <div className="-mt-6 flex items-center gap-3.5">
-        <div className="flex h-[78px] w-[78px] shrink-0 items-center justify-center rounded-2xl bg-[var(--color-primary)]">
-          <i
-            className="ri-user-3-fill text-[32px] leading-none"
-            style={{ color: "var(--color-white)" }}
-            aria-hidden="true"
-          />
+      <section className="-mt-4 flex items-center gap-3.5">
+        <div className="flex h-[78px] w-[78px] shrink-0 items-center justify-center rounded-[var(--radius-control)] bg-[var(--color-primary)] text-[var(--color-surface)]">
+          <RiUser3Fill size={32} aria-hidden="true" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="m-0 mb-1 text-xl font-bold text-[var(--color-text)]">{name}</p>
-          <p className="m-0 mb-2 text-sm font-bold text-[var(--color-primary)]">
-            Lv. {level} {levelTitle}
+          <p className="mb-1 text-xl font-bold text-[var(--color-text)]">
+            {profile.nickname ?? "식물 탐험가"}
           </p>
-          <div className="h-1.5 w-[220px] max-w-full overflow-hidden rounded-[4px] bg-[#D9E0D8]">
-            <div
-              className="h-full rounded-[4px] bg-[var(--color-primary)]"
-              style={{ width: `${xpPercent}%` }}
-            />
-          </div>
-          <div className="mt-1.5 text-xs font-normal text-[var(--color-sub)]">
-            {xp} / {xpMax} XP
-          </div>
+          <p className="mb-2 text-sm font-bold text-[var(--color-primary)]">
+            Lv. {profile.level} {levelTitle}
+          </p>
+          <ProgressBar value={profile.currentLevelXp} max={profile.xpToNextLevel} label="레벨 진행도" />
+          <p className="mt-1.5 text-xs text-[var(--color-text-muted)]">
+            {profile.currentLevelXp} / {profile.xpToNextLevel} XP
+          </p>
         </div>
-      </div>
+      </section>
 
-      <div className="flex gap-2.5">
-        {stats.map((stat) => (
-          <div
-            key={stat.label}
-            className="flex h-[92px] flex-1 flex-col items-center justify-center rounded-2xl bg-[var(--color-white)] text-center"
-          >
-            <div className="text-2xl font-bold text-[var(--color-deep)]">{stat.value}</div>
-            <div className="mt-1.5 text-xs font-normal text-[var(--color-sub)]">
-              {stat.label}
-            </div>
+      <section className="flex gap-2.5">
+        {cards.map((card) => (
+          <div key={card.label} className="flex h-[92px] flex-1 flex-col items-center justify-center rounded-[var(--radius-control)] bg-[var(--color-surface)] text-center">
+            <strong className="text-2xl text-[var(--color-primary-strong)]">{card.value}</strong>
+            <span className="mt-1.5 text-xs text-[var(--color-text-muted)]">{card.label}</span>
           </div>
         ))}
-      </div>
+      </section>
 
-      <div className="text-lg font-bold text-[var(--color-text)]">최근 활동</div>
-
-      <div className="flex flex-col gap-4">
-        {RECENT_ACTIVITIES.map((activity) => (
-          <div
-            key={activity.id}
-            className="flex h-[58px] w-full items-center gap-3 rounded-2xl bg-[var(--color-white)] px-4"
-          >
-            <span
-              className="h-2 w-2 shrink-0 rounded-full"
-              style={{ background: activity.dotColor }}
-              aria-hidden="true"
-            />
-            <div className="min-w-0 flex-1">
-              <p className="m-0 truncate text-sm font-medium text-[var(--color-text)]">
-                {activity.text}
-              </p>
-              <p className="m-0 text-xs font-normal text-[var(--color-sub)]">
-                {activity.time}
-              </p>
+      <section>
+        <h2 className="mb-4 text-lg font-bold text-[var(--color-text)]">최근 활동</h2>
+        <div className="flex flex-col gap-3">
+          {recentObservations.slice(0, 3).map((observation) => (
+            <div key={observation.id} className="rounded-[var(--radius-control)] bg-[var(--color-surface)] px-4 py-3">
+              <p className="text-sm font-medium text-[var(--color-text)]">{observation.displayName} 관찰</p>
+              <time className="text-xs text-[var(--color-text-muted)]" dateTime={observation.observedAt}>
+                {new Date(observation.observedAt).toLocaleDateString("ko-KR")}
+              </time>
             </div>
-            <i className="ri-arrow-right-s-line text-lg text-[var(--color-sub)]" aria-hidden="true" />
-          </div>
-        ))}
-      </div>
-
-      <div className="rounded-2xl bg-[#EEF3EA] px-4 py-3.5">
-        <div className="mb-0.5 text-xs font-bold text-[var(--color-primary)]">위치 정보</div>
-        <div className="text-xs font-normal text-[var(--color-sub)]">
-          MVP에서는 위치를 저장하지 않아요
+          ))}
         </div>
-      </div>
+      </section>
     </div>
   );
 }

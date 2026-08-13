@@ -12,7 +12,7 @@
 
 ## 데이터 구성
 
-- 공식 도감 50종: `data/official-plants.ts`
+- 공식 도감 50종: `data/plants.ts`
 - 식별: Pl@ntNet
 - 한국 이름과 설명: 산림청 국립수목원 API
 - 사용자 XP, 레벨, 식물별 발견 횟수와 관찰 기록: Supabase
@@ -76,6 +76,8 @@ setUserId('Supabase Auth 사용자 UUID')
 ## POST /api/identify
 
 `multipart/form-data`로 JPG 또는 PNG `image` 파일 하나를 보냅니다. 최대 크기는 6MB입니다.
+
+선택한 식물 부위는 `organ` 필드로 함께 보낼 수 있습니다. 허용값은 `flower`, `leaf`, `fruit`이며, `auto`이거나 필드를 생략하면 Pl@ntNet 자동 판별을 사용합니다.
 
 처리 순서는 다음과 같습니다.
 

@@ -3,6 +3,7 @@ import type {
   HealthResponse,
 } from '@/types/api'
 import type { IdentifyResponseDto } from '@/types/identify'
+import type { PlantOrgan } from '@/types/domain'
 import type {
   CreateObservationInput,
   CreateObservationResponseDto,
@@ -83,9 +84,10 @@ export function getHealth() {
 }
 
 /** 사진 한 장을 보내 식물 후보를 최대 3개 받습니다. */
-export function identifyPlant(image: File) {
+export function identifyPlant(image: Blob, organ: PlantOrgan = 'auto') {
   const form = new FormData()
-  form.append('image', image)
+  form.append('image', image, image instanceof File ? image.name : 'plant.jpg')
+  if (organ !== 'auto') form.append('organ', organ)
 
   // Content-Type은 브라우저가 boundary와 함께 자동으로 붙이므로 지정하지 않습니다.
   return request<IdentifyResponseDto>('/api/identify', {

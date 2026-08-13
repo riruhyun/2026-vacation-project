@@ -1,8 +1,8 @@
-import { getOfficialPlant, getOfficialPlantById } from '@/data/official-plants'
+import { getOfficialPlant, getOfficialPlantById } from '@/data/plants'
 import { errorMessage, fail, ok } from '@/lib/server/http'
 import { imageError, imageExtension, imageUrl } from '@/lib/server/image'
 import { toObservationDto } from '@/lib/server/observation'
-import { BASE_XP_BY_STAGE, levelProgress } from '@/lib/server/progress'
+import { BASE_XP_BY_STAGE, levelProgress } from '@/lib/progress'
 import { supabase } from '@/lib/server/supabase'
 import { userIdFrom } from '@/lib/server/user'
 

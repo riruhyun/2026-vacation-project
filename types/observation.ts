@@ -1,16 +1,14 @@
-import type {
-  ObservationId,
-  PlantId,
-  PlantPart,
-} from "./domain";
-
-export interface ObservationDraft {
-  imageDataUrl: string;
-  part: PlantPart;
-  capturedAt: string;
-}
+import type { ObservationId, PlantId, PlantStage } from "./domain";
 
 export type ObservationResult = "new" | "duplicate";
+
+export type ObservationSelection = {
+  plantId: PlantId | null;
+  official: boolean;
+  koreanName: string;
+  scientificName: string;
+  stage: PlantStage | null;
+};
 
 export type ObservationDto = {
   id: ObservationId;

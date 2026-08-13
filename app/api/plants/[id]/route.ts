@@ -1,4 +1,4 @@
-import { getOfficialPlantById } from '@/data/official-plants'
+import { getOfficialPlantById } from '@/data/plants'
 import { errorMessage, fail, ok } from '@/lib/server/http'
 import { getForestPlant } from '@/lib/server/forest'
 import { imageUrl } from '@/lib/server/image'

@@ -1,8 +1,9 @@
+import { RiPlantLine } from "@remixicon/react";
+
 export function PlantPlaceholder() {
   return (
-    <i
-      className="ri-plant-line text-[120px] leading-none text-[#8fbc8f] opacity-90"
-      aria-hidden="true"
-    />
+    <span aria-label="식물 사진 자리" role="img">
+      <RiPlantLine size={120} className="text-[var(--color-primary)] opacity-70" />
+    </span>
   );
 }

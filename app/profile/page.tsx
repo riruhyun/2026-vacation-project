@@ -1,5 +1,7 @@
-import ProfileScreen from "./ProfileScreen";
+import ProfileScreen from "@/components/profile/ProfileScreen";
+import { getProfileData } from "@/lib/data";
 
-export default function ProfilePage() {
-  return <ProfileScreen />;
+export default async function ProfilePage() {
+  const data = await getProfileData();
+  return <ProfileScreen data={data} />;
 }
