@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getMockIdentifyResult } from "@/lib/data";
+import { identifyPlant } from "@/lib/api";
 import {
   readIdentifyDraft,
   writeIdentifyCandidates,
@@ -63,7 +63,10 @@ export function useIdentifyAnalysis() {
       setError(null);
 
       try {
-        const result = await getMockIdentifyResult(draft.organ);
+        const image = await fetch(draft.imageUrl).then((response) =>
+          response.blob(),
+        );
+        const result = await identifyPlant(image, draft.organ);
         if (!active) return;
 
         window.clearInterval(interval);
