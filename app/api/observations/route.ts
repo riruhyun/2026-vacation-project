@@ -1,15 +1,20 @@
+import { getOfficialPlant, getOfficialPlantById } from '@/data/plants'
 import { errorMessage, fail, ok } from '@/lib/server/http'
 import { imageError, imageExtension, imageUrl } from '@/lib/server/image'
 import { toObservationDto } from '@/lib/server/observation'
+import { BASE_XP_BY_STAGE, levelProgress } from '@/lib/progress'
 import { supabase } from '@/lib/server/supabase'
 import { userIdFrom } from '@/lib/server/user'
 
 export const runtime = 'nodejs'
 
-type PlantRow = {
-  id: number
-  korean_name: string
-  scientific_name: string
+type RewardRow = {
+  observation_id: string
+  observed_at: string
+  plant_count: number
+  xp_awarded: number
+  total_xp: number
+  user_level: number
 }
 
 function text(form: FormData, key: string) {
@@ -43,40 +48,24 @@ export async function POST(request: Request) {
       return fail('plantId가 올바르지 않습니다.')
     }
 
-    let plant: PlantRow | null = null
-    if (plantId !== null) {
-      const { data, error } = await supabase
-        .from('plants')
-        .select('id,korean_name,scientific_name')
-        .eq('id', plantId)
-        .maybeSingle()
+    const submittedScientificName = text(form, 'scientificName')
+    const officialPlant =
+      plantId !== null
+        ? getOfficialPlantById(plantId)
+        : getOfficialPlant(submittedScientificName)
 
-      if (error) throw error
-      if (!data) return fail('공식 식물을 찾을 수 없습니다.', 404)
-      plant = data
+    if (plantId !== null && !officialPlant) {
+      return fail('공식 식물을 찾을 수 없습니다.', 404)
     }
 
-    const scientificName = plant?.scientific_name || text(form, 'scientificName')
-    const displayName = plant?.korean_name || text(form, 'displayName')
+    const scientificName =
+      officialPlant?.scientificName || submittedScientificName
+    const displayName =
+      officialPlant?.koreanName || text(form, 'displayName')
 
     if (!scientificName || !displayName) {
       return fail('기타 식물은 scientificName과 displayName이 필요합니다.')
     }
-
-    let duplicateQuery = supabase
-      .from('observations')
-      .select('id')
-      .eq('user_id', userId)
-
-    duplicateQuery = plant
-      ? duplicateQuery.eq('plant_id', plant.id)
-      : duplicateQuery.is('plant_id', null).eq('scientific_name', scientificName)
-
-    const { data: existing, error: duplicateError } = await duplicateQuery
-      .limit(1)
-      .maybeSingle()
-
-    if (duplicateError) throw duplicateError
 
     const path = `${userId}/${crypto.randomUUID()}.${imageExtension(image)}`
     const { error: uploadError } = await supabase.storage
@@ -88,30 +77,56 @@ export async function POST(request: Request) {
 
     if (uploadError) throw uploadError
 
-    const { data: observation, error: insertError } = await supabase
-      .from('observations')
-      .insert({
-        user_id: userId,
-        plant_id: plant?.id ?? null,
-        scientific_name: scientificName,
-        display_name: displayName,
-        image_path: path,
-      })
-      .select('id,plant_id,scientific_name,display_name,image_path,observed_at')
-      .single()
+    const { data, error: insertError } = await supabase.rpc(
+      'record_observation_reward',
+      {
+        p_user_id: userId,
+        p_scientific_name: scientificName,
+        p_display_name: displayName,
+        p_image_path: path,
+        p_base_xp: officialPlant
+          ? BASE_XP_BY_STAGE[officialPlant.stage]
+          : 0,
+      },
+    )
 
     if (insertError) {
       await supabase.storage.from('observations').remove([path])
       throw insertError
     }
 
+    const reward = (data as RewardRow[] | null)?.[0]
+    if (!reward) {
+      await supabase.storage.from('observations').remove([path])
+      throw new Error('관찰 보상 결과가 없습니다.')
+    }
+
+    const previousLevel = levelProgress(
+      reward.total_xp - reward.xp_awarded,
+    ).level
+    const observation = {
+      id: reward.observation_id,
+      scientific_name: scientificName,
+      display_name: displayName,
+      image_path: path,
+      observed_at: reward.observed_at,
+    }
+
     return ok(
       {
-        result: existing ? 'duplicate' : 'new',
+        result: reward.plant_count === 1 ? 'new' : 'duplicate',
         observation: toObservationDto(
           observation,
           imageUrl(observation.image_path),
+          officialPlant?.id ?? null,
         ),
+        reward: {
+          xp: reward.xp_awarded,
+          totalXp: reward.total_xp,
+          level: reward.user_level,
+          leveledUp: reward.user_level > previousLevel,
+          plantCount: reward.plant_count,
+        },
       },
       201,
     )

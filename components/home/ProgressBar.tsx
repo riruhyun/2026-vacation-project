@@ -1,39 +1,29 @@
-// 공통 컴포넌트: 진행률 바
-// 홈의 XP 진행률, 도감 완성률 등에서 재사용
-
 interface ProgressBarProps {
-  percent: number; // 0~100
-  trackColor?: string;
-  fillColor?: string;
-  height?: number;
+  value?: number;
+  max?: number;
+  label?: string;
 }
 
 export default function ProgressBar({
-  percent,
-  trackColor = "rgba(255,255,255,0.25)",
-  fillColor = "var(--color-accent)",
-  height = 8,
+  value,
+  max = 100,
+  label = "진행률",
 }: ProgressBarProps) {
-  const clamped = Math.min(100, Math.max(0, percent));
+  const resolvedValue = value ?? 0;
+  const clamped = Math.min(100, Math.max(0, (resolvedValue / max) * 100));
 
   return (
     <div
-      style={{
-        width: "100%",
-        height,
-        borderRadius: "var(--radius-pill)",
-        background: trackColor,
-        overflow: "hidden",
-      }}
+      aria-label={label}
+      aria-valuemax={max}
+      aria-valuemin={0}
+      aria-valuenow={Math.min(max, Math.max(0, resolvedValue))}
+      className="h-2 w-full overflow-hidden rounded-[var(--radius-pill)] bg-[var(--color-border)]"
+      role="progressbar"
     >
       <div
-        style={{
-          width: `${clamped}%`,
-          height: "100%",
-          background: fillColor,
-          borderRadius: "var(--radius-pill)",
-          transition: "width 0.3s ease",
-        }}
+        style={{ width: `${clamped}%` }}
+        className="h-full rounded-[var(--radius-pill)] bg-[var(--color-primary)] transition-[width] duration-300"
       />
     </div>
   );

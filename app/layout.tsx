@@ -14,12 +14,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
-      <head>
-        <link
-          rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css"
-        />
-      </head>
       <body>
         <AppFrame>{children}</AppFrame>
       </body>

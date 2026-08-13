@@ -1,88 +1,88 @@
-// 공통 컴포넌트: 하단 내비게이션
-
 "use client";
 
+import {
+  RiBookOpenFill,
+  RiBookOpenLine,
+  RiCameraFill,
+  RiCameraLine,
+  RiHome5Fill,
+  RiHome5Line,
+  RiUser3Fill,
+  RiUser3Line,
+} from "@remixicon/react";
+import type { RemixiconComponentType } from "@remixicon/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 interface NavItem {
   label: string;
   href: string;
-  icon: (active: boolean) => string;
+  activeIcon: RemixiconComponentType;
+  inactiveIcon: RemixiconComponentType;
 }
 
 const NAV_ITEMS: NavItem[] = [
   {
     label: "홈",
     href: "/",
-    icon: (active) => (active ? "ri-home-5-fill" : "ri-home-5-line"),
+    activeIcon: RiHome5Fill,
+    inactiveIcon: RiHome5Line,
   },
   {
     label: "도감",
     href: "/collection",
-    icon: (active) => (active ? "ri-book-open-fill" : "ri-book-open-line"),
+    activeIcon: RiBookOpenFill,
+    inactiveIcon: RiBookOpenLine,
   },
   {
     label: "수집",
     href: "/capture",
-    icon: (active) => (active ? "ri-camera-fill" : "ri-camera-line"),
+    activeIcon: RiCameraFill,
+    inactiveIcon: RiCameraLine,
   },
   {
     label: "프로필",
     href: "/profile",
-    icon: (active) => (active ? "ri-user-3-fill" : "ri-user-3-line"),
+    activeIcon: RiUser3Fill,
+    inactiveIcon: RiUser3Line,
   },
 ];
 
 export default function BottomNav() {
   const pathname = usePathname();
 
+  function isActive(href: string) {
+    if (href === "/") return pathname === "/";
+    if (href === "/collection") {
+      return ["/collection", "/plants", "/findings", "/search"].some(
+        (route) => pathname.startsWith(route),
+      );
+    }
+    if (href === "/capture") {
+      return pathname.startsWith("/capture") || pathname.startsWith("/identify");
+    }
+    return pathname.startsWith(href);
+  }
+
   return (
-    <nav
-      style={{
-        position: "sticky",
-        bottom: 0,
-        left: 0,
-        right: 0,
-        background: "var(--color-bg)",
-        borderTop: "1px solid var(--color-border)",
-        display: "flex",
-        justifyContent: "space-around",
-        padding: "10px 8px calc(10px + env(safe-area-inset-bottom))",
-      }}
-    >
+    <nav className="fixed inset-x-1/2 bottom-0 z-50 flex w-[min(100vw,480px)] -translate-x-1/2 justify-around border-t border-[var(--color-border)] bg-[var(--color-background)] px-2 pb-[calc(10px+env(safe-area-inset-bottom))] pt-2.5">
       {NAV_ITEMS.map((item) => {
-        const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+        const active = isActive(item.href);
+        const Icon = active ? item.activeIcon : item.inactiveIcon;
+
         return (
           <Link
             key={item.href}
             href={item.href}
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: "4px",
-              padding: "6px 14px",
-              borderRadius: "var(--radius-pill)",
-              background: active ? "rgba(31,74,61,0.08)" : "transparent",
-            }}
+            aria-current={active ? "page" : undefined}
+            className={`flex flex-col items-center gap-1 rounded-[var(--radius-pill)] px-3.5 py-1.5 ${active ? "bg-[var(--color-info-surface)]" : ""}`}
           >
-            <i
-              className={item.icon(active)}
+            <Icon
+              size={22}
               aria-hidden="true"
-              style={{
-                fontSize: "22px",
-                lineHeight: 1,
-                color: active ? "var(--color-deep-green)" : "var(--color-text-muted)",
-              }}
+              className={active ? "text-[var(--color-primary-strong)]" : "text-[var(--color-text-muted)]"}
             />
-            <span
-              style={{
-                fontSize: "12px",
-                fontWeight: active ? 700 : 500,
-                color: active ? "var(--color-deep-green)" : "var(--color-text-muted)",
-              }}
-            >
+            <span className={`text-xs ${active ? "font-bold text-[var(--color-primary-strong)]" : "font-medium text-[var(--color-text-muted)]"}`}>
               {item.label}
             </span>
           </Link>

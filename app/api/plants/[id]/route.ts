@@ -1,6 +1,7 @@
+import { getOfficialPlantById } from '@/data/plants'
 import { errorMessage, fail, ok } from '@/lib/server/http'
+import { getForestPlant } from '@/lib/server/forest'
 import { imageUrl } from '@/lib/server/image'
-import { getPlantInformation } from '@/lib/server/inaturalist'
 import { supabase } from '@/lib/server/supabase'
 import { userIdFrom } from '@/lib/server/user'
 
@@ -16,16 +17,10 @@ export async function GET(
       return fail('식물 ID가 올바르지 않습니다.')
     }
 
-    const { data: plant, error: plantError } = await supabase
-      .from('plants')
-      .select('id,korean_name,scientific_name,rarity')
-      .eq('id', plantId)
-      .maybeSingle()
-
-    if (plantError) throw plantError
+    const plant = getOfficialPlantById(plantId)
     if (!plant) return fail('식물을 찾을 수 없습니다.', 404)
 
-    const information = await getPlantInformation(plant.scientific_name)
+    const forestPlant = await getForestPlant(plant.scientificName)
 
     const userId = userIdFrom(request)
     let observations: Array<{
@@ -39,7 +34,7 @@ export async function GET(
         .from('observations')
         .select('id,image_path,observed_at')
         .eq('user_id', userId)
-        .eq('plant_id', plantId)
+        .eq('scientific_name', plant.scientificName)
         .order('observed_at', { ascending: false })
 
       if (error) throw error
@@ -50,11 +45,14 @@ export async function GET(
       plant: {
         id: plant.id,
         official: true,
-        koreanName: information?.koreanName || plant.korean_name,
-        scientificName: information?.scientificName || plant.scientific_name,
+        koreanName: forestPlant?.koreanName || plant.koreanName,
+        scientificName: plant.scientificName,
+        stage: plant.stage,
         rarity: plant.rarity,
-        information,
-        informationSource: 'iNaturalist',
+        description: forestPlant?.description || null,
+        informationSource: '산림청 국립수목원',
+        informationSourceUrl:
+          'https://www.data.go.kr/data/15143513/openapi.do',
       },
       userCollection: {
         collected: observations.length > 0,

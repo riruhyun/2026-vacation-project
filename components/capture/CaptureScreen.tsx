@@ -1,13 +1,10 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import PageHeader from "@/components/layout/PageHeader";
-import { PrimaryButton } from "@/components/ui/PrimaryButton";
-import { SecondaryButton } from "@/components/ui/SecondaryButton";
-import { PlantPreviewCard } from "@/components/ui/PlantPreviewCard";
+import Button from "@/components/ui/Button";
 import { PlantPlaceholder } from "@/components/ui/PlantPlaceholder";
-import { saveDraft } from "@/lib/identify-storage";
+import { useCaptureSession } from "@/hooks/useCaptureSession";
+import { IMAGE_INPUT_ACCEPT } from "@/lib/image-constraints";
 
 const TIPS = [
   { title: "밝기", description: "밝고 선명한 사진" },
@@ -16,82 +13,91 @@ const TIPS = [
 ];
 
 export function CaptureScreen() {
-  const router = useRouter();
-  const cameraInputRef = useRef<HTMLInputElement>(null);
-  const galleryInputRef = useRef<HTMLInputElement>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-
-  const handleFileSelect = (file: File | undefined) => {
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const dataUrl = event.target?.result as string;
-      setPreviewUrl(dataUrl);
-      saveDraft(dataUrl);
-      router.push("/identify?step=confirm");
-    };
-    reader.readAsDataURL(file);
-  };
+  const {
+    galleryInputRef,
+    videoRef,
+    previewUrl,
+    cameraReady,
+    isMirrored,
+    error,
+    handleFileSelect,
+    handleCapture,
+    openGallery,
+  } = useCaptureSession();
 
   return (
-    <div className="mx-auto flex min-h-full w-full max-w-md flex-col px-5 py-6">
+    <div className="flex min-h-full flex-col">
       <PageHeader
+        variant="identify"
         title="식물 사진 가져오기"
-        subtitle="휴대폰 카메라로 촬영하거나 갤러리의 사진을 선택하세요."
-        showBack
+        subtitle="카메라로 촬영하거나 갤러리에서 사진을 선택하세요."
       />
 
-      <PlantPreviewCard
-        imageUrl={previewUrl ?? undefined}
-        label={previewUrl ? "선택한 식물 사진" : undefined}
-        variant="dark"
-        placeholder={
-          <div className="flex flex-col items-center gap-4 px-6 py-8 text-center">
-            <p className="text-sm font-medium text-white/80">촬영 또는 사진 선택</p>
-            <PlantPlaceholder />
-            <p className="text-xs text-white/60">
-              선택한 사진은 다음 화면에서 다시 확인할 수 있어요.
-            </p>
+      <section className="rounded-3xl bg-[var(--color-primary-strong)] px-8 py-6 text-center text-[var(--color-surface)]">
+        <p className="text-base font-bold">촬영 또는 사진 선택</p>
+        <div className="mt-8 h-[300px] overflow-hidden rounded-3xl border-2 border-[var(--color-accent)] bg-[var(--color-primary)]">
+          <div className="flex h-full w-full items-center justify-center">
+            {previewUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={previewUrl} alt="선택한 식물" className="h-full w-full object-cover" />
+            ) : (
+              <>
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className={`${cameraReady ? "h-full w-full object-cover" : "hidden"} ${isMirrored ? "-scale-x-100" : ""}`}
+                />
+                {!cameraReady ? <PlantPlaceholder /> : null}
+              </>
+            )}
           </div>
-        }
-      />
+        </div>
+        <p className="mt-8 text-xs leading-relaxed text-[var(--color-info-surface)]">
+          선택한 사진은 다음 화면에서 다시 확인할 수 있어요.
+        </p>
+      </section>
 
-      <div className="mt-6 grid grid-cols-3 gap-3">
+      <div className="mt-7 grid grid-cols-3 gap-3">
         {TIPS.map((tip) => (
-          <div
-            key={tip.title}
-            className="rounded-2xl border border-border bg-surface px-3 py-4 text-center"
-          >
-            <p className="text-sm font-bold text-primary">{tip.title}</p>
-            <p className="mt-1 text-xs leading-relaxed text-muted">{tip.description}</p>
+          <div key={tip.title} className="rounded-[var(--radius-control)] bg-[var(--color-surface)] px-3 py-5 text-center">
+            <p className="text-sm font-bold text-[var(--color-primary)]">{tip.title}</p>
+            <p className="mt-4 text-xs leading-relaxed text-[var(--color-text-muted)]">{tip.description}</p>
           </div>
         ))}
       </div>
 
-      <div className="mt-auto space-y-2 pt-8">
-        <PrimaryButton onClick={() => cameraInputRef.current?.click()}>
-          사진 촬영하기
-        </PrimaryButton>
-        <SecondaryButton onClick={() => galleryInputRef.current?.click()}>
-          갤러리에서 선택하기
-        </SecondaryButton>
+      <div className="mt-auto space-y-3 pt-8">
+        <Button type="button" fullWidth disabled={!previewUrl && !cameraReady} onClick={handleCapture}>
+          {previewUrl ? "사진 확인하기" : "사진 촬영하기"}
+        </Button>
+        {!previewUrl && !cameraReady ? (
+          <p className="text-center text-xs text-[var(--color-text-muted)]">
+            카메라를 사용할 수 없어요. 아래에서 갤러리 사진을 선택해 주세요.
+          </p>
+        ) : null}
+        {error ? (
+          <p role="alert" className="text-center text-xs font-semibold text-red-700">
+            {error}
+          </p>
+        ) : null}
+        <div className="flex justify-center">
+          <Button type="button" variant="ghost" onClick={openGallery} className="min-h-10 rounded-[var(--radius-pill)] px-8 py-2 text-xs">
+            {previewUrl ? "갤러리에서 다시 선택하기" : "갤러리에서 선택하기"}
+          </Button>
+        </div>
       </div>
 
       <input
-        ref={cameraInputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        className="hidden"
-        onChange={(e) => handleFileSelect(e.target.files?.[0])}
-      />
-      <input
         ref={galleryInputRef}
         type="file"
-        accept="image/*"
+        accept={IMAGE_INPUT_ACCEPT}
         className="hidden"
-        onChange={(e) => handleFileSelect(e.target.files?.[0])}
+        onChange={(event) => {
+          handleFileSelect(event.target.files?.[0]);
+          event.currentTarget.value = "";
+        }}
       />
     </div>
   );

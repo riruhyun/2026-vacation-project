@@ -1,22 +1,20 @@
+import { getOfficialPlant, OFFICIAL_PLANTS } from '@/data/plants'
 import { errorMessage, fail, ok } from '@/lib/server/http'
 import { imageUrl } from '@/lib/server/image'
 import { supabase } from '@/lib/server/supabase'
 import { userIdFrom } from '@/lib/server/user'
 
-type PlantRow = {
-  id: number
-  korean_name: string
-  scientific_name: string
-  rarity: string
-}
-
 type ObservationRow = {
   id: string
-  plant_id: number | null
   scientific_name: string
   display_name: string
   image_path: string
   observed_at: string
+}
+
+type CountRow = {
+  scientific_name: string
+  count: number
 }
 
 export async function GET(request: Request) {
@@ -24,79 +22,78 @@ export async function GET(request: Request) {
   if (!userId) return fail('x-user-id에 사용자 UUID가 필요합니다.', 401)
 
   try {
-    const { data: plantData, error: plantError } = await supabase
-      .from('plants')
-      .select('id,korean_name,scientific_name,rarity')
-      .order('id')
+    const { data: countData, error: countError } = await supabase
+      .from('user_plant_counts')
+      .select('scientific_name,count')
+      .eq('user_id', userId)
 
-    if (plantError) throw plantError
+    if (countError) throw countError
 
     const { data: observationData, error: observationError } = await supabase
       .from('observations')
-      .select('id,plant_id,scientific_name,display_name,image_path,observed_at')
+      .select('id,scientific_name,display_name,image_path,observed_at')
       .eq('user_id', userId)
       .order('observed_at', { ascending: false })
 
     if (observationError) throw observationError
 
-    const plants = (plantData || []) as PlantRow[]
+    const counts = (countData || []) as CountRow[]
     const observations = (observationData || []) as ObservationRow[]
-    const collectedPlantIds = new Set(
-      observations.flatMap((item) => (item.plant_id ? [item.plant_id] : [])),
+    const countByName = new Map(
+      counts.map((item) => [item.scientific_name, item.count]),
     )
+    const latestByName = new Map<string, ObservationRow>()
+    const firstByName = new Map<string, ObservationRow>()
 
-    const collection = plants.map((plant) => {
-      const records = observations.filter((item) => item.plant_id === plant.id)
+    for (const item of observations) {
+      if (!latestByName.has(item.scientific_name)) {
+        latestByName.set(item.scientific_name, item)
+      }
+      firstByName.set(item.scientific_name, item)
+    }
+
+    const collection = OFFICIAL_PLANTS.map((plant) => {
+      const count = countByName.get(plant.scientificName) || 0
+      const latest = latestByName.get(plant.scientificName)
       return {
         id: plant.id,
-        koreanName: plant.korean_name,
-        scientificName: plant.scientific_name,
+        koreanName: plant.koreanName,
+        scientificName: plant.scientificName,
+        stage: plant.stage,
         rarity: plant.rarity,
-        collected: records.length > 0,
-        observationCount: records.length,
-        representativeImageUrl: records[0]
-          ? imageUrl(records[0].image_path)
-          : null,
+        collected: count > 0,
+        observationCount: count,
+        representativeImageUrl: latest ? imageUrl(latest.image_path) : null,
+        firstObservedAt: firstByName.get(plant.scientificName)?.observed_at || null,
+        lastObservedAt: latest?.observed_at || null,
       }
     })
 
-    const otherByName = new Map<
-      string,
-      {
-        scientificName: string
-        displayName: string
-        observationCount: number
-        representativeImageUrl: string
-        lastObservedAt: string
-      }
-    >()
-
-    for (const item of observations.filter((record) => record.plant_id === null)) {
-      const previous = otherByName.get(item.scientific_name)
-      if (previous) {
-        previous.observationCount += 1
-      } else {
-        otherByName.set(item.scientific_name, {
+    const others = counts
+      .filter((item) => !getOfficialPlant(item.scientific_name))
+      .map((item) => {
+        const latest = latestByName.get(item.scientific_name)
+        return {
           scientificName: item.scientific_name,
-          displayName: item.display_name,
-          observationCount: 1,
-          representativeImageUrl: imageUrl(item.image_path),
-          lastObservedAt: item.observed_at,
-        })
-      }
-    }
+          displayName: latest?.display_name || item.scientific_name,
+          observationCount: item.count,
+          representativeImageUrl: latest ? imageUrl(latest.image_path) : '',
+          lastObservedAt: latest?.observed_at || '',
+        }
+      })
 
-    const total = plants.length
-    const collected = collectedPlantIds.size
+    const total = OFFICIAL_PLANTS.length
+    const collected = collection.filter((item) => item.collected).length
 
     return ok({
       summary: {
         total,
         collected,
+        totalObservations: counts.reduce((sum, item) => sum + item.count, 0),
         completionRate: total ? Math.round((collected / total) * 100) : 0,
       },
-      plants: collection,
-      others: Array.from(otherByName.values()),
+      officialPlants: collection,
+      otherFindings: others,
     })
   } catch (error) {
     return fail('도감 조회 중 오류가 발생했습니다.', 500, errorMessage(error))

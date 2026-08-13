@@ -1,91 +1,200 @@
-import { isCandidateCardViewModel } from "@/lib/identify-candidate";
-import type { PlantPart } from "@/types/domain";
-import type { CandidateCardViewModel } from "@/types/identify";
-import type { ObservationDraft } from "@/types/observation";
+import { PLANT_ORGANS, type PlantOrgan } from "@/types/domain";
+import type {
+  IdentifyCandidateDto,
+  IdentifyResponseDto,
+} from "@/types/identify";
+import type {
+  CreateObservationResponseDto,
+  ObservationDto,
+} from "@/types/observation";
 
-const DRAFT_STORAGE_KEY = "plant-identify-draft";
-const RESULT_STORAGE_KEY = "plant-identify-results";
-const PLANT_PARTS: PlantPart[] = ["auto", "flower", "leaf", "fruit"];
+const IDENTIFY_KEYS = {
+  draftImage: "identify:draft-image",
+  organ: "identify:organ",
+  candidates: "identify:candidates",
+  result: "identify:result",
+} as const;
 
-export function parseObservationDraft(value: unknown): ObservationDraft | null {
-  if (!value || typeof value !== "object") return null;
+export type IdentifyDraft = {
+  imageUrl: string;
+  organ: PlantOrgan;
+};
 
-  const draft = value as Record<string, unknown>;
-  if (
-    typeof draft.imageDataUrl !== "string" ||
-    typeof draft.part !== "string" ||
-    !PLANT_PARTS.includes(draft.part as PlantPart) ||
-    typeof draft.capturedAt !== "string"
-  ) {
-    return null;
-  }
+type StoredIdentifyResult = Omit<CreateObservationResponseDto, "observation"> & {
+  observation: Omit<ObservationDto, "imageUrl">;
+};
 
-  return {
-    imageDataUrl: draft.imageDataUrl,
-    part: draft.part as PlantPart,
-    capturedAt: draft.capturedAt,
-  };
+function getStorage() {
+  return typeof window === "undefined" ? null : window.sessionStorage;
 }
 
-export function parseIdentifyResults(
-  value: unknown,
-): CandidateCardViewModel[] | null {
-  if (!Array.isArray(value) || value.length === 0) return null;
-  return value.every(isCandidateCardViewModel) ? value : null;
-}
+function readJson(key: string): unknown | null {
+  const storage = getStorage();
+  if (!storage) return null;
 
-export function saveDraft(imageDataUrl: string, part: PlantPart = "auto") {
-  const draft: ObservationDraft = {
-    imageDataUrl,
-    part,
-    capturedAt: new Date().toISOString(),
-  };
-  sessionStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
-}
-
-export function getDraft(): ObservationDraft | null {
-  if (typeof window === "undefined") return null;
-  const raw = sessionStorage.getItem(DRAFT_STORAGE_KEY);
-  if (!raw) return null;
-  try {
-    const draft = parseObservationDraft(JSON.parse(raw) as unknown);
-    if (!draft) sessionStorage.removeItem(DRAFT_STORAGE_KEY);
-    return draft;
-  } catch {
-    sessionStorage.removeItem(DRAFT_STORAGE_KEY);
-    return null;
-  }
-}
-
-export function updateDraftPart(part: PlantPart) {
-  const draft = getDraft();
-  if (!draft) return;
-  saveDraft(draft.imageDataUrl, part);
-}
-
-export function clearDraft() {
-  sessionStorage.removeItem(DRAFT_STORAGE_KEY);
-}
-
-export function saveIdentifyResults(results: CandidateCardViewModel[]) {
-  sessionStorage.setItem(RESULT_STORAGE_KEY, JSON.stringify(results));
-}
-
-export function getIdentifyResults(): CandidateCardViewModel[] | null {
-  if (typeof window === "undefined") return null;
-  const raw = sessionStorage.getItem(RESULT_STORAGE_KEY);
+  const raw = storage.getItem(key);
   if (!raw) return null;
 
   try {
-    const results = parseIdentifyResults(JSON.parse(raw) as unknown);
-    if (!results) sessionStorage.removeItem(RESULT_STORAGE_KEY);
-    return results;
+    return JSON.parse(raw) as unknown;
   } catch {
-    sessionStorage.removeItem(RESULT_STORAGE_KEY);
+    storage.removeItem(key);
     return null;
   }
 }
 
-export function clearIdentifyResults() {
-  sessionStorage.removeItem(RESULT_STORAGE_KEY);
+function isPlantOrgan(value: unknown): value is PlantOrgan {
+  return (
+    typeof value === "string" &&
+    PLANT_ORGANS.some((organ) => organ === value)
+  );
+}
+
+function isIdentifyCandidate(value: unknown): value is IdentifyCandidateDto {
+  if (!value || typeof value !== "object") return false;
+
+  const candidate = value as Record<string, unknown>;
+  return (
+    (typeof candidate.plantId === "number" || candidate.plantId === null) &&
+    typeof candidate.official === "boolean" &&
+    (candidate.matchType === "exact" || candidate.matchType === null) &&
+    typeof candidate.koreanName === "string" &&
+    (typeof candidate.description === "string" || candidate.description === null) &&
+    typeof candidate.scientificName === "string" &&
+    typeof candidate.scientificNameWithAuthor === "string" &&
+    (typeof candidate.family === "string" || candidate.family === null) &&
+    typeof candidate.score === "number" &&
+    ([1, 2, 3].includes(candidate.stage as number) || candidate.stage === null) &&
+    (["common", "uncommon", "rare"].includes(candidate.rarity as string) ||
+      candidate.rarity === null) &&
+    (typeof candidate.imageUrl === "string" || candidate.imageUrl === null) &&
+    (typeof candidate.imageAttribution === "string" ||
+      candidate.imageAttribution === null)
+  );
+}
+
+function isIdentifyResponse(value: unknown): value is IdentifyResponseDto {
+  if (!value || typeof value !== "object") return false;
+
+  const response = value as Record<string, unknown>;
+  return (
+    Array.isArray(response.candidates) &&
+    response.candidates.every(isIdentifyCandidate) &&
+    (typeof response.remainingRequests === "number" ||
+      response.remainingRequests === null)
+  );
+}
+
+function isObservationResult(value: unknown): value is StoredIdentifyResult {
+  if (!value || typeof value !== "object") return false;
+
+  const response = value as Record<string, unknown>;
+  const observation = response.observation as Record<string, unknown> | undefined;
+  const reward = response.reward as Record<string, unknown> | undefined;
+
+  if (!observation || !reward) return false;
+
+  return (
+    (response.result === "new" || response.result === "duplicate") &&
+    typeof observation.id === "string" &&
+    (typeof observation.plantId === "number" || observation.plantId === null) &&
+    typeof observation.scientificName === "string" &&
+    typeof observation.displayName === "string" &&
+    typeof observation.imagePath === "string" &&
+    typeof observation.observedAt === "string" &&
+    !("imageUrl" in observation) &&
+    typeof reward.xp === "number" &&
+    typeof reward.totalXp === "number" &&
+    typeof reward.level === "number" &&
+    typeof reward.leveledUp === "boolean" &&
+    typeof reward.plantCount === "number"
+  );
+}
+
+export function readIdentifyDraft(): IdentifyDraft | null {
+  const imageUrl = readJson(IDENTIFY_KEYS.draftImage);
+  const organ = readJson(IDENTIFY_KEYS.organ);
+
+  if (typeof imageUrl === "string" && isPlantOrgan(organ)) {
+    return { imageUrl, organ };
+  }
+
+  const storage = getStorage();
+  storage?.removeItem(IDENTIFY_KEYS.draftImage);
+  storage?.removeItem(IDENTIFY_KEYS.organ);
+  return null;
+}
+
+export function writeIdentifyDraft(imageUrl: string, organ: PlantOrgan = "auto") {
+  const storage = getStorage();
+  if (!storage) return false;
+
+  try {
+    storage.setItem(IDENTIFY_KEYS.draftImage, JSON.stringify(imageUrl));
+    storage.setItem(IDENTIFY_KEYS.organ, JSON.stringify(organ));
+    return true;
+  } catch {
+    storage.removeItem(IDENTIFY_KEYS.draftImage);
+    storage.removeItem(IDENTIFY_KEYS.organ);
+    return false;
+  }
+}
+
+export function readIdentifyCandidates(): IdentifyResponseDto | null {
+  const value = readJson(IDENTIFY_KEYS.candidates);
+  if (isIdentifyResponse(value)) return value;
+
+  if (value !== null) getStorage()?.removeItem(IDENTIFY_KEYS.candidates);
+  return null;
+}
+
+export function writeIdentifyCandidates(response: IdentifyResponseDto) {
+  getStorage()?.setItem(IDENTIFY_KEYS.candidates, JSON.stringify(response));
+}
+
+export function readIdentifyResult(): CreateObservationResponseDto | null {
+  const value = readJson(IDENTIFY_KEYS.result);
+  const draft = readIdentifyDraft();
+  if (isObservationResult(value) && draft) {
+    return {
+      ...value,
+      observation: {
+        ...value.observation,
+        imageUrl: draft.imageUrl,
+      },
+    };
+  }
+
+  if (value !== null) getStorage()?.removeItem(IDENTIFY_KEYS.result);
+  return null;
+}
+
+export function writeIdentifyResult(result: CreateObservationResponseDto) {
+  const storage = getStorage();
+  if (!storage) return false;
+
+  const observation = {
+    id: result.observation.id,
+    plantId: result.observation.plantId,
+    scientificName: result.observation.scientificName,
+    displayName: result.observation.displayName,
+    imagePath: result.observation.imagePath,
+    observedAt: result.observation.observedAt,
+  };
+  const storedResult: StoredIdentifyResult = { ...result, observation };
+
+  try {
+    storage.setItem(IDENTIFY_KEYS.result, JSON.stringify(storedResult));
+    return true;
+  } catch {
+    storage.removeItem(IDENTIFY_KEYS.result);
+    return false;
+  }
+}
+
+export function clearIdentifySession() {
+  const storage = getStorage();
+  if (!storage) return;
+
+  Object.values(IDENTIFY_KEYS).forEach((key) => storage.removeItem(key));
 }
