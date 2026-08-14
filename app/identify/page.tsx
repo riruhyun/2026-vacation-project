@@ -85,7 +85,12 @@ function IdentifyContent() {
     return <AnalyzingScreen imageUrl={session.draft.imageUrl} />;
   }
   if (step === "candidates" && session.draft && session.candidates) {
-    return <CandidatesScreen candidates={session.candidates.candidates} />;
+    return (
+      <CandidatesScreen
+        candidates={session.candidates.candidates}
+        imageUrl={session.draft.imageUrl}
+      />
+    );
   }
   if (step === "failed") return <FailedScreen />;
   if (step === "result" && session.result) {

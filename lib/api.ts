@@ -84,7 +84,11 @@ export function getHealth() {
 }
 
 /** 사진 한 장을 보내 식물 후보를 최대 3개 받습니다. */
-export function identifyPlant(image: Blob, organ: PlantOrgan = 'auto') {
+export function identifyPlant(
+  image: Blob,
+  organ: PlantOrgan = 'auto',
+  signal?: AbortSignal,
+) {
   const form = new FormData()
   form.append('image', image, image instanceof File ? image.name : 'plant.jpg')
   if (organ !== 'auto') form.append('organ', organ)
@@ -93,26 +97,40 @@ export function identifyPlant(image: Blob, organ: PlantOrgan = 'auto') {
   return request<IdentifyResponseDto>('/api/identify', {
     method: 'POST',
     body: form,
+    signal,
   })
 }
 
 /** 사용자가 고른 식물을 사진과 함께 저장합니다. */
-export function saveObservation(input: CreateObservationInput) {
+export function saveObservation(
+  input: CreateObservationInput,
+  signal?: AbortSignal,
+) {
   const form = new FormData()
   form.append('image', input.image)
 
   if (input.plantId != null) {
     form.append('plantId', String(input.plantId))
-  } else {
-    // 기타 식물은 학명과 표시명을 직접 넘겨야 합니다.
-    if (input.scientificName) form.append('scientificName', input.scientificName)
-    if (input.displayName) form.append('displayName', input.displayName)
+  }
+
+  if (input.scientificName) form.append('scientificName', input.scientificName)
+  if (input.genusName) form.append('genusName', input.genusName)
+  if (input.displayName) form.append('displayName', input.displayName)
+  if (input.identificationScore != null) {
+    form.append('identificationScore', String(input.identificationScore))
+  }
+  if (input.identificationCandidates) {
+    form.append(
+      'identificationCandidates',
+      JSON.stringify(input.identificationCandidates),
+    )
   }
 
   return request<CreateObservationResponseDto>('/api/observations', {
     method: 'POST',
     headers: userHeaders(),
     body: form,
+    signal,
   })
 }
 

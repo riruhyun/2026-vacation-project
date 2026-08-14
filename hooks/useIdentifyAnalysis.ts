@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getMockIdentifyResult } from "@/lib/data";
+import { ApiError, identifyPlant } from "@/lib/api";
 import {
   readIdentifyDraft,
   writeIdentifyCandidates,
@@ -16,7 +16,9 @@ const STATUS_MESSAGES = [
   { threshold: 75, text: "후보를 정리하는 중" },
 ];
 
-type AnalysisStatus = "loading" | "success" | "error";
+const IDENTIFY_TIMEOUT_MS = 20_000;
+
+type AnalysisStatus = "loading" | "success" | "timeout" | "error";
 
 export function useIdentifyAnalysis() {
   const router = useRouter();
@@ -25,10 +27,16 @@ export function useIdentifyAnalysis() {
   const [response, setResponse] = useState<IdentifyResponseDto | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
+  const cancelRef = useRef<(() => void) | null>(null);
 
   const retry = useCallback(() => {
     setAttempt((value) => value + 1);
   }, []);
+
+  const cancel = useCallback(() => {
+    cancelRef.current?.();
+    router.push("/identify?step=confirm");
+  }, [router]);
 
   const statusMessage = useMemo(
     () =>
@@ -41,12 +49,27 @@ export function useIdentifyAnalysis() {
 
   useEffect(() => {
     let active = true;
+    let timedOut = false;
+    let cancelledByUser = false;
     let progressValue = 0;
+    const controller = new AbortController();
+    const cancelCurrentAttempt = () => {
+      cancelledByUser = true;
+      active = false;
+      controller.abort();
+    };
+    cancelRef.current = cancelCurrentAttempt;
+
     const interval = window.setInterval(() => {
       progressValue = Math.min(progressValue + Math.floor(Math.random() * 12) + 4, 95);
       if (active) setProgress(progressValue);
       if (progressValue >= 95) window.clearInterval(interval);
     }, 400);
+    const timeout = window.setTimeout(() => {
+      if (!active) return;
+      timedOut = true;
+      controller.abort();
+    }, IDENTIFY_TIMEOUT_MS);
 
     async function analyze() {
       await Promise.resolve();
@@ -63,10 +86,20 @@ export function useIdentifyAnalysis() {
       setError(null);
 
       try {
-        const result = await getMockIdentifyResult(draft.organ);
+        const image = await fetch(draft.imageUrl, {
+          signal: controller.signal,
+        }).then((response) =>
+          response.blob(),
+        );
+        const result = await identifyPlant(
+          image,
+          draft.organ,
+          controller.signal,
+        );
         if (!active) return;
 
         window.clearInterval(interval);
+        window.clearTimeout(timeout);
         setProgress(100);
         setResponse(result);
         setStatus("success");
@@ -81,12 +114,30 @@ export function useIdentifyAnalysis() {
           writeIdentifyCandidates(result);
           router.replace("/identify?step=candidates");
         }, 600);
-      } catch {
+      } catch (caught) {
         if (!active) return;
         window.clearInterval(interval);
+        window.clearTimeout(timeout);
+
+        if (cancelledByUser) return;
+
+        if (timedOut) {
+          setStatus("timeout");
+          setError("분석 시간이 길어지고 있어요. 다시 시도해 주세요.");
+          return;
+        }
+
+        if (caught instanceof ApiError && caught.isNotIdentified) {
+          router.replace("/identify?step=failed");
+          return;
+        }
+
         setStatus("error");
-        setError("식물 후보를 불러오지 못했습니다.");
-        router.replace("/identify?step=failed");
+        setError(
+          caught instanceof ApiError
+            ? caught.message
+            : "식물 후보를 불러오지 못했습니다. 다시 시도해 주세요.",
+        );
       }
     }
 
@@ -95,8 +146,21 @@ export function useIdentifyAnalysis() {
     return () => {
       active = false;
       window.clearInterval(interval);
+      window.clearTimeout(timeout);
+      if (cancelRef.current === cancelCurrentAttempt) {
+        cancelRef.current = null;
+      }
+      controller.abort();
     };
   }, [attempt, router]);
 
-  return { progress, status, response, error, retry, statusMessage, router };
+  return {
+    progress,
+    status,
+    response,
+    error,
+    retry,
+    cancel,
+    statusMessage,
+  };
 }
