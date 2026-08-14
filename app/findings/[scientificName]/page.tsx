@@ -1,6 +1,9 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import PlantDetailScreen from "@/components/plants/PlantDetailScreen";
-import { getFindingDetail } from "@/lib/data";
+import { ApiError, getCollection } from "@/lib/api";
+import { buildFindingDetailData } from "@/lib/api-view-models";
+
+export const dynamic = "force-dynamic";
 
 export default async function FindingDetailPage({
   params,
@@ -8,8 +11,17 @@ export default async function FindingDetailPage({
   params: Promise<{ scientificName: string }>;
 }) {
   const { scientificName } = await params;
-  const data = await getFindingDetail(decodeURIComponent(scientificName));
-  if (!data) notFound();
+  try {
+    const collection = await getCollection();
+    const data = buildFindingDetailData(decodeURIComponent(scientificName), collection);
+    if (!data) notFound();
 
-  return <PlantDetailScreen data={data} />;
+    return <PlantDetailScreen data={data} />;
+  } catch (error) {
+    if (error instanceof ApiError && error.isUnauthorized) {
+      redirect("/login");
+    }
+
+    throw error;
+  }
 }

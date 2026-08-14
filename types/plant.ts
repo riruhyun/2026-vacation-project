@@ -54,8 +54,9 @@ export interface PlantDetailScreenData {
   imageUrl: string | null;
   rarity: RarityCode | null;
   observationCount: number;
-  firstObservedAt: string;
+  firstObservedAt: string | null;
   informationSource: string;
+  informationSourceUrl?: string;
 }
 
 export type PlantDetailResponseDto = {

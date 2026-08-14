@@ -1,7 +1,19 @@
+import { redirect } from "next/navigation";
 import HomeScreen from "@/components/home/HomeScreen";
-import { getHomeData } from "@/lib/data";
+import { ApiError, getCollection, getProfile } from "@/lib/api";
+import { buildHomeData } from "@/lib/api-view-models";
+
+export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const data = await getHomeData();
-  return <HomeScreen data={data} />;
+  try {
+    const [collection, profile] = await Promise.all([getCollection(), getProfile()]);
+    return <HomeScreen data={buildHomeData(profile, collection)} />;
+  } catch (error) {
+    if (error instanceof ApiError && error.isUnauthorized) {
+      redirect("/login");
+    }
+
+    throw error;
+  }
 }

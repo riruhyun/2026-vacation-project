@@ -57,10 +57,25 @@ function userHeaders(): HeadersInit {
   return currentUserId ? { 'x-user-id': currentUserId } : {}
 }
 
+function getServerBaseUrl() {
+  if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`
+  return 'http://localhost:3000'
+}
+
+function resolveRequestUrl(path: string) {
+  if (/^https?:\/\//i.test(path)) return path
+  if (typeof window !== 'undefined') return path
+  return new URL(path, getServerBaseUrl()).toString()
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   let response: Response
   try {
-    response = await fetch(path, init)
+    response = await fetch(resolveRequestUrl(path), {
+      ...init,
+      cache: init?.cache ?? 'no-store',
+    })
   } catch {
     throw new ApiError('서버에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.', 0)
   }
