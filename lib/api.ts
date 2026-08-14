@@ -84,7 +84,11 @@ export function getHealth() {
 }
 
 /** 사진 한 장을 보내 식물 후보를 최대 3개 받습니다. */
-export function identifyPlant(image: Blob, organ: PlantOrgan = 'auto') {
+export function identifyPlant(
+  image: Blob,
+  organ: PlantOrgan = 'auto',
+  signal?: AbortSignal,
+) {
   const form = new FormData()
   form.append('image', image, image instanceof File ? image.name : 'plant.jpg')
   if (organ !== 'auto') form.append('organ', organ)
@@ -93,6 +97,7 @@ export function identifyPlant(image: Blob, organ: PlantOrgan = 'auto') {
   return request<IdentifyResponseDto>('/api/identify', {
     method: 'POST',
     body: form,
+    signal,
   })
 }
 
