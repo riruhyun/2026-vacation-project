@@ -96,6 +96,24 @@ describe("identify result storage", () => {
     expect(readIdentifyResult()?.observation.imageUrl).toBe(DRAFT_IMAGE_URL);
   });
 
+  it.each(["blob:https://example.test/image", "DATA:image/jpeg;base64,copy"])(
+    "falls back to the draft for a non-HTTP result image URL: %s",
+    (imageUrl) => {
+      const storage = new MemoryStorage();
+      useStorage(storage);
+      writeIdentifyDraft(DRAFT_IMAGE_URL);
+
+      expect(
+        writeIdentifyResult({
+          ...RESULT,
+          observation: { ...RESULT.observation, imageUrl },
+        }),
+      ).toBe(true);
+
+      expect(readIdentifyResult()?.observation.imageUrl).toBe(DRAFT_IMAGE_URL);
+    },
+  );
+
   it("reports a result storage quota failure without throwing", () => {
     const storage = new MemoryStorage();
     storage.setItem("identify:draft-image", JSON.stringify(DRAFT_IMAGE_URL));

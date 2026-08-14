@@ -184,7 +184,7 @@ export function writeIdentifyResult(result: CreateObservationResponseDto) {
     observedAt: result.observation.observedAt,
   };
 
-  if (!result.observation.imageUrl.startsWith("data:")) {
+  if (/^https?:\/\//i.test(result.observation.imageUrl)) {
     observation.imageUrl = result.observation.imageUrl;
   }
 

@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import PageHeader from "@/components/layout/PageHeader";
 import Button from "@/components/ui/Button";
-import { ApiError, saveObservation } from "@/lib/api";
+import { ApiError } from "@/lib/api";
+import { resolveObservationResult } from "@/lib/identify-observation";
 import { writeIdentifyResult } from "@/lib/identify-storage";
 import type { IdentifyCandidateDto } from "@/types/identify";
+import type { CreateObservationResponseDto } from "@/types/observation";
 
 interface CandidatesScreenProps {
   candidates: IdentifyCandidateDto[];
@@ -17,15 +19,6 @@ function formatConfidence(score: number) {
   return `${Math.round(score * 100)}%`;
 }
 
-async function capturedFile(imageUrl: string) {
-  const response = await fetch(imageUrl);
-  if (!response.ok) throw new Error("촬영 이미지를 불러오지 못했습니다.");
-
-  const blob = await response.blob();
-  const extension = blob.type === "image/png" ? "png" : "jpg";
-  return new File([blob], `plant.${extension}`, { type: blob.type });
-}
-
 export function CandidatesScreen({
   candidates,
   imageUrl,
@@ -33,32 +26,44 @@ export function CandidatesScreen({
   const router = useRouter();
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
+  const [savedResult, setSavedResult] =
+    useState<CreateObservationResponseDto | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const mountedRef = useRef(true);
+  const savingRef = useRef(false);
   const selected = candidates[selectedIndex];
+  const navigationLocked = isSaving || savedResult !== null;
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   async function continueWithCandidate() {
-    if (!selected || isSaving) return;
+    if (!selected || savingRef.current) return;
 
+    savingRef.current = true;
     setIsSaving(true);
     setError(null);
     try {
-      const image = await capturedFile(imageUrl);
-      const result = await saveObservation(
-        selected.plantId != null
-          ? { image, plantId: selected.plantId }
-          : {
-              image,
-              plantId: null,
-              scientificName: selected.scientificName,
-              displayName: selected.koreanName,
-            },
+      const result = await resolveObservationResult(
+        savedResult,
+        selected,
+        imageUrl,
       );
+      if (!mountedRef.current) return;
+
+      if (!savedResult) setSavedResult(result);
       if (!writeIdentifyResult(result)) {
         setError("관찰 결과를 임시 저장하지 못했어요. 저장 공간을 확인하고 다시 시도해 주세요.");
         return;
       }
       router.replace("/identify?step=result");
     } catch (caught) {
+      if (!mountedRef.current) return;
+
       if (caught instanceof ApiError && caught.isUnauthorized) {
         router.push("/login?next=%2Fidentify%3Fstep%3Dcandidates");
         return;
@@ -70,7 +75,8 @@ export function CandidatesScreen({
           : "관찰 기록을 저장하지 못했어요. 다시 시도해 주세요.",
       );
     } finally {
-      setIsSaving(false);
+      savingRef.current = false;
+      if (mountedRef.current) setIsSaving(false);
     }
   }
 
@@ -80,8 +86,10 @@ export function CandidatesScreen({
         variant="identify"
         title="이 식물이 맞나요?"
         subtitle="AI 후보를 보고 직접 가장 가까운 식물을 선택해주세요."
-        showBack
-        onBack={() => router.push("/identify?step=confirm")}
+        showBack={!navigationLocked}
+        onBack={() => {
+          if (!navigationLocked) router.push("/identify?step=confirm");
+        }}
       />
 
       <div className="space-y-4">
@@ -93,6 +101,7 @@ export function CandidatesScreen({
               key={`${candidate.scientificName}-${index}`}
               type="button"
               aria-pressed={isSelected}
+              disabled={navigationLocked}
               onClick={() => setSelectedIndex(index)}
               className={`h-[142px] w-full rounded-[var(--radius-card)] border-2 p-3 text-left transition-colors ${
                 isSelected
@@ -170,12 +179,17 @@ export function CandidatesScreen({
           disabled={!selected || isSaving}
           onClick={continueWithCandidate}
         >
-          {isSaving ? "기록 만드는 중…" : `${selected?.koreanName ?? "선택한 식물"}로 기록하기`}
+          {isSaving
+            ? "기록 만드는 중…"
+            : savedResult
+              ? "결과 화면 다시 열기"
+              : `${selected?.koreanName ?? "선택한 식물"}로 기록하기`}
         </Button>
         <Button
           type="button"
           variant="ghost"
           fullWidth
+          disabled={navigationLocked}
           onClick={() => router.push("/search?mode=identify")}
         >
           후보에 없어요 · 직접 검색
