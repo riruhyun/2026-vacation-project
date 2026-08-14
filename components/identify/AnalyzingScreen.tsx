@@ -1,6 +1,7 @@
 "use client";
 
 import PageHeader from "@/components/layout/PageHeader";
+import Button from "@/components/ui/Button";
 import { useIdentifyAnalysis } from "@/hooks/useIdentifyAnalysis";
 
 interface AnalyzingScreenProps {
@@ -46,7 +47,14 @@ function ProgressRing({ progress }: { progress: number }) {
 }
 
 export function AnalyzingScreen({ imageUrl }: AnalyzingScreenProps) {
-  const { progress, statusMessage, router } = useIdentifyAnalysis();
+  const {
+    progress,
+    status,
+    error,
+    retry,
+    cancel,
+    statusMessage,
+  } = useIdentifyAnalysis();
 
   return (
     <div className="flex min-h-full flex-col">
@@ -55,7 +63,7 @@ export function AnalyzingScreen({ imageUrl }: AnalyzingScreenProps) {
         title="식물을 찾고 있어요"
         subtitle="꽃·잎·전체 형태를 비교하고 있습니다."
         showBack
-        onBack={() => router.push("/identify?step=confirm")}
+        onBack={cancel}
       />
 
       <section className="mx-auto h-[330px] w-[282px] overflow-hidden rounded-[20px]">
@@ -76,7 +84,11 @@ export function AnalyzingScreen({ imageUrl }: AnalyzingScreenProps) {
         <ProgressRing progress={progress} />
         <div className="text-center">
           <p className="text-base font-semibold text-[var(--color-text)]">
-            {statusMessage}
+            {status === "timeout"
+              ? "분석 시간이 길어지고 있어요"
+              : status === "error"
+                ? "분석을 완료하지 못했어요"
+                : statusMessage}
           </p>
           <p className="mt-3 text-xs font-normal text-[var(--color-text-muted)]">
             보통 5~10초 정도 걸려요
@@ -84,10 +96,29 @@ export function AnalyzingScreen({ imageUrl }: AnalyzingScreenProps) {
         </div>
       </div>
 
-      <div className="mt-auto pt-8">
-        <div className="mx-auto flex h-10 w-[262px] items-center justify-center rounded-full bg-[var(--color-surface)] text-center text-xs font-medium text-[var(--color-primary)]">
-          사진 확인&nbsp;&nbsp;✓&nbsp;&nbsp; 후보 검색&nbsp;&nbsp;·&nbsp;&nbsp; 정보 연결
-        </div>
+      <div className="mt-auto space-y-3 pt-8">
+        {status === "loading" || status === "success" ? (
+          <>
+            <div className="mx-auto flex h-10 w-[262px] items-center justify-center rounded-full bg-[var(--color-surface)] text-center text-xs font-medium text-[var(--color-primary)]">
+              사진 확인&nbsp;&nbsp;✓&nbsp;&nbsp; 후보 검색&nbsp;&nbsp;·&nbsp;&nbsp; 정보 연결
+            </div>
+            <Button type="button" variant="ghost" fullWidth onClick={cancel}>
+              분석 취소
+            </Button>
+          </>
+        ) : (
+          <>
+            <p role="alert" className="text-center text-sm text-red-700">
+              {error}
+            </p>
+            <Button type="button" fullWidth onClick={retry}>
+              다시 시도
+            </Button>
+            <Button type="button" variant="ghost" fullWidth onClick={cancel}>
+              사진 확인으로 돌아가기
+            </Button>
+          </>
+        )}
       </div>
     </div>
   );

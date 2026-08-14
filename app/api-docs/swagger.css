@@ -1,0 +1,14 @@
+.api-docs-page {
+  min-height: 100vh;
+  background: #fafafa;
+}
+
+.api-docs-page .swagger-ui {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+.api-docs-page .swagger-ui .topbar {
+  display: none;
+}

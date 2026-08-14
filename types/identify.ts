@@ -7,7 +7,7 @@ export type IdentifyStep =
   | "failed"
   | "result";
 
-export type MatchType = "exact" | null;
+export type MatchType = "species" | "genus" | null;
 
 export type IdentifyCandidateDto = {
   plantId: PlantId | null;
@@ -17,6 +17,7 @@ export type IdentifyCandidateDto = {
   description: string | null;
   scientificName: string;
   scientificNameWithAuthor: string;
+  genusName: string | null;
   family: string | null;
   score: number;
   stage: PlantStage | null;

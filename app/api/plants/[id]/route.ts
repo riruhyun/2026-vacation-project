@@ -1,9 +1,15 @@
-import { getOfficialPlantById } from '@/data/plants'
+import { getCollectionCardById } from '@/lib/server/collection-cards'
 import { errorMessage, fail, ok } from '@/lib/server/http'
-import { getForestPlant } from '@/lib/server/forest'
+import { getForestPlant, getForestPlantByNumber } from '@/lib/server/forest'
 import { imageUrl } from '@/lib/server/image'
 import { supabase } from '@/lib/server/supabase'
 import { userIdFrom } from '@/lib/server/user'
+
+type ObservationRow = {
+  id: string
+  image_path: string
+  observed_at: string
+}
 
 export async function GET(
   request: Request,
@@ -17,38 +23,49 @@ export async function GET(
       return fail('식물 ID가 올바르지 않습니다.')
     }
 
-    const plant = getOfficialPlantById(plantId)
-    if (!plant) return fail('식물을 찾을 수 없습니다.', 404)
+    const card = await getCollectionCardById(plantId)
+    if (!card) return fail('식물을 찾을 수 없습니다.', 404)
 
-    const forestPlant = await getForestPlant(plant.scientificName)
+    const forestPlant = card.representativePlantPilbkNo
+      ? await getForestPlantByNumber(card.representativePlantPilbkNo)
+      : await getForestPlant(card.scientificName)
 
     const userId = userIdFrom(request)
-    let observations: Array<{
-      id: string
-      image_path: string
-      observed_at: string
-    }> = []
+    let observations: ObservationRow[] = []
 
     if (userId) {
-      const { data, error } = await supabase
+      const { data: userObservations, error: observationError } = await supabase
         .from('observations')
         .select('id,image_path,observed_at')
         .eq('user_id', userId)
-        .eq('scientific_name', plant.scientificName)
         .order('observed_at', { ascending: false })
 
-      if (error) throw error
-      observations = data || []
+      if (observationError) throw observationError
+      const rows = (userObservations || []) as ObservationRow[]
+
+      if (rows.length > 0) {
+        const { data: matches, error: matchError } = await supabase
+          .from('observation_collection_matches')
+          .select('observation_id')
+          .eq('collection_card_id', card.id)
+          .in('observation_id', rows.map((item) => item.id))
+
+        if (matchError) throw matchError
+        const matchedIds = new Set(
+          (matches || []).map((item) => item.observation_id as string),
+        )
+        observations = rows.filter((item) => matchedIds.has(item.id))
+      }
     }
 
     return ok({
       plant: {
-        id: plant.id,
+        id: card.id,
         official: true,
-        koreanName: forestPlant?.koreanName || plant.koreanName,
-        scientificName: plant.scientificName,
-        stage: plant.stage,
-        rarity: plant.rarity,
+        koreanName: card.displayName,
+        scientificName: card.scientificName,
+        stage: card.stage,
+        rarity: card.rarity,
         description: forestPlant?.description || null,
         informationSource: '산림청 국립수목원',
         informationSourceUrl:

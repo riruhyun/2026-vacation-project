@@ -1,6 +1,12 @@
-import { getOfficialPlant } from "@/data/plants";
+import { matchCollectionCard } from "@/lib/collection-card-matching";
 import { PLANT_ORGANS } from "@/types/domain";
-import { getForestPlant } from "@/lib/server/forest";
+import {
+  getCollectionCatalog,
+} from "@/lib/server/collection-cards";
+import {
+  getForestPlant,
+  getForestPlantByNumber,
+} from "@/lib/server/forest";
 import { errorMessage, fail, ok } from "@/lib/server/http";
 import { imageError } from "@/lib/server/image";
 import type { IdentifyResponseDto } from "@/types/identify";
@@ -16,6 +22,7 @@ type PlantNetResult = {
     scientificName: string;
     commonNames?: string[];
     family?: { scientificNameWithoutAuthor?: string };
+    genus?: { scientificNameWithoutAuthor?: string };
   };
   images?: Array<{
     url?: { o?: string; m?: string; s?: string };
@@ -80,40 +87,67 @@ export async function POST(request: Request) {
       return fail(body.message || "식물 식별에 실패했습니다.", 502);
     }
 
-    const results = (body.results || []).slice(0, 3);
+    const { cards, matchers } = await getCollectionCatalog();
+    const matchedResults = (body.results || []).map((item) => {
+      const scientificName = item.species.scientificNameWithoutAuthor;
+      const genusName =
+        item.species.genus?.scientificNameWithoutAuthor ||
+        scientificName.split(/\s+/)[0] ||
+        null;
+
+      return {
+        item,
+        scientificName,
+        genusName,
+        match: matchCollectionCard(
+          cards,
+          matchers,
+          scientificName,
+          genusName,
+        ),
+      };
+    });
+    const seen = new Set<string>();
+    const results = matchedResults.filter(({ match, scientificName }) => {
+      const key = match
+        ? `card:${match.card.id}`
+        : `species:${scientificName.toLowerCase()}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    }).slice(0, 3);
     const forestPlants = await Promise.all(
-      results.map((item) =>
-        getOfficialPlant(item.species.scientificNameWithoutAuthor)
-          ? getForestPlant(item.species.scientificNameWithoutAuthor).catch(
-              () => null,
-            )
-          : null,
-      ),
+      results.map(({ match, scientificName }) => {
+        if (!match) return null;
+        const request = match.card.representativePlantPilbkNo
+          ? getForestPlantByNumber(match.card.representativePlantPilbkNo)
+          : getForestPlant(scientificName);
+        return request.catch(() => null);
+      }),
     );
 
-    const candidates = results.map((item, index) => {
-      const scientificName = item.species.scientificNameWithoutAuthor;
+    const candidates = results.map((result, index) => {
+      const { item, scientificName, genusName, match } = result;
       const relatedImage = item.images?.[0];
       const forestPlant = forestPlants[index];
 
-      const official = getOfficialPlant(scientificName);
-
       return {
-        plantId: official?.id ?? null,
-        official: Boolean(official),
-        matchType: official ? ("exact" as const) : null,
+        plantId: match?.card.id ?? null,
+        official: Boolean(match),
+        matchType: match?.matchType ?? null,
         koreanName:
+          match?.card.displayName ||
           forestPlant?.koreanName ||
-          official?.koreanName ||
           item.species.commonNames?.[0] ||
           scientificName,
         description: forestPlant?.description || null,
         scientificName,
         scientificNameWithAuthor: item.species.scientificName,
+        genusName,
         family: item.species.family?.scientificNameWithoutAuthor || null,
         score: item.score,
-        stage: official?.stage ?? null,
-        rarity: official?.rarity ?? null,
+        stage: match?.card.stage ?? null,
+        rarity: match?.card.rarity ?? null,
         imageUrl:
           relatedImage?.url?.m || relatedImage?.url?.o || relatedImage?.url?.s || null,
         imageAttribution:

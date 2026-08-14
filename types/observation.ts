@@ -36,5 +36,12 @@ export type CreateObservationInput = {
   image: File;
   plantId?: PlantId | null;
   scientificName?: string;
+  genusName?: string | null;
   displayName?: string;
+  identificationScore?: number;
+  identificationCandidates?: Array<{
+    scientificName: string;
+    genusName: string | null;
+    score: number;
+  }>;
 };

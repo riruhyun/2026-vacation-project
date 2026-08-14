@@ -11,6 +11,9 @@ type AppFrameProps = {
 export default function AppFrame({ children }: AppFrameProps) {
   const pathname = usePathname();
   const isLoginRoute = pathname === "/login";
+  const isApiDocsRoute = pathname === "/api-docs";
+
+  if (isApiDocsRoute) return children;
 
   return (
     <div className="app-shell">
