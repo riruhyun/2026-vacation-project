@@ -88,6 +88,23 @@ describe("identifyPlant", () => {
 });
 
 describe("saveObservation", () => {
+  it("forwards the caller's abort signal with the observation request", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(success(OBSERVATION_RESPONSE, 201));
+    vi.stubGlobal("fetch", fetchMock);
+    const controller = new AbortController();
+
+    await saveObservation(
+      {
+        image: new File(["image"], "plant.jpg", { type: "image/jpeg" }),
+        plantId: 1,
+      },
+      controller.signal,
+    );
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(init.signal).toBe(controller.signal);
+  });
+
   it("sends only plantId for an official candidate", async () => {
     const fetchMock = vi.fn().mockResolvedValue(success(OBSERVATION_RESPONSE, 201));
     vi.stubGlobal("fetch", fetchMock);

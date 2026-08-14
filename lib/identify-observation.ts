@@ -2,8 +2,8 @@ import { saveObservation } from "@/lib/api";
 import type { IdentifyCandidateDto } from "@/types/identify";
 import type { CreateObservationResponseDto } from "@/types/observation";
 
-async function capturedFile(imageUrl: string) {
-  const response = await fetch(imageUrl);
+async function capturedFile(imageUrl: string, signal?: AbortSignal) {
+  const response = await fetch(imageUrl, { signal });
   if (!response.ok) throw new Error("촬영 이미지를 불러오지 못했습니다.");
 
   const blob = await response.blob();
@@ -15,10 +15,13 @@ export async function resolveObservationResult(
   savedResult: CreateObservationResponseDto | null,
   candidate: IdentifyCandidateDto,
   imageUrl: string,
+  signal?: AbortSignal,
 ): Promise<CreateObservationResponseDto> {
   if (savedResult) return savedResult;
 
-  const image = await capturedFile(imageUrl);
+  const image = await capturedFile(imageUrl, signal);
+  signal?.throwIfAborted();
+
   return saveObservation(
     candidate.plantId != null
       ? { image, plantId: candidate.plantId }
@@ -28,5 +31,6 @@ export async function resolveObservationResult(
           scientificName: candidate.scientificName,
           displayName: candidate.koreanName,
         },
+    signal,
   );
 }

@@ -102,7 +102,10 @@ export function identifyPlant(
 }
 
 /** 사용자가 고른 식물을 사진과 함께 저장합니다. */
-export function saveObservation(input: CreateObservationInput) {
+export function saveObservation(
+  input: CreateObservationInput,
+  signal?: AbortSignal,
+) {
   const form = new FormData()
   form.append('image', input.image)
 
@@ -118,6 +121,7 @@ export function saveObservation(input: CreateObservationInput) {
     method: 'POST',
     headers: userHeaders(),
     body: form,
+    signal,
   })
 }
 

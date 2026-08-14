@@ -31,6 +31,7 @@ export function CandidatesScreen({
   const [error, setError] = useState<string | null>(null);
   const mountedRef = useRef(true);
   const savingRef = useRef(false);
+  const saveControllerRef = useRef<AbortController | null>(null);
   const selected = candidates[selectedIndex];
   const navigationLocked = isSaving || savedResult !== null;
 
@@ -38,6 +39,7 @@ export function CandidatesScreen({
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
+      saveControllerRef.current?.abort();
     };
   }, []);
 
@@ -45,6 +47,8 @@ export function CandidatesScreen({
     if (!selected || savingRef.current) return;
 
     savingRef.current = true;
+    const controller = new AbortController();
+    saveControllerRef.current = controller;
     setIsSaving(true);
     setError(null);
     try {
@@ -52,6 +56,7 @@ export function CandidatesScreen({
         savedResult,
         selected,
         imageUrl,
+        controller.signal,
       );
       if (!mountedRef.current) return;
 
@@ -76,6 +81,9 @@ export function CandidatesScreen({
       );
     } finally {
       savingRef.current = false;
+      if (saveControllerRef.current === controller) {
+        saveControllerRef.current = null;
+      }
       if (mountedRef.current) setIsSaving(false);
     }
   }
