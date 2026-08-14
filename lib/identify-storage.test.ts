@@ -34,7 +34,9 @@ class MemoryStorage implements Storage {
   }
 }
 
-const IMAGE_URL = "data:image/jpeg;base64,current-draft";
+const DRAFT_IMAGE_URL = "data:image/jpeg;base64,current-draft";
+const STORED_IMAGE_URL =
+  "https://example.supabase.co/storage/v1/object/public/observations/current.jpg";
 
 const RESULT: CreateObservationResponseDto = {
   result: "new",
@@ -44,7 +46,7 @@ const RESULT: CreateObservationResponseDto = {
     scientificName: "Plantago asiatica",
     displayName: "질경이",
     imagePath: "mock/current.jpg",
-    imageUrl: IMAGE_URL,
+    imageUrl: STORED_IMAGE_URL,
     observedAt: "2026-08-13T12:00:00.000Z",
   },
   reward: {
@@ -65,48 +67,46 @@ afterEach(() => {
 });
 
 describe("identify result storage", () => {
-  it("stores result metadata without duplicating the draft image", () => {
+  it("preserves the canonical backend observation image URL", () => {
     const storage = new MemoryStorage();
     useStorage(storage);
 
-    expect(writeIdentifyDraft(IMAGE_URL)).toBe(true);
+    expect(writeIdentifyDraft(DRAFT_IMAGE_URL)).toBe(true);
     expect(writeIdentifyResult(RESULT)).toBe(true);
 
-    const stored = storage.getItem("identify:result");
-    expect(stored).not.toContain(IMAGE_URL);
-    expect(JSON.parse(stored ?? "null").observation).not.toHaveProperty("imageUrl");
+    expect(readIdentifyResult()?.observation.imageUrl).toBe(STORED_IMAGE_URL);
   });
 
-  it("hydrates a stored result with the current draft image", () => {
+  it("omits a duplicated data URL and falls back to the draft image", () => {
     const storage = new MemoryStorage();
     useStorage(storage);
 
-    writeIdentifyDraft(IMAGE_URL);
-    const storedObservation = {
-      id: RESULT.observation.id,
-      plantId: RESULT.observation.plantId,
-      scientificName: RESULT.observation.scientificName,
-      displayName: RESULT.observation.displayName,
-      imagePath: RESULT.observation.imagePath,
-      observedAt: RESULT.observation.observedAt,
+    writeIdentifyDraft(DRAFT_IMAGE_URL);
+    const dataResult = {
+      ...RESULT,
+      observation: {
+        ...RESULT.observation,
+        imageUrl: DRAFT_IMAGE_URL,
+      },
     };
-    storage.setItem(
-      "identify:result",
-      JSON.stringify({ ...RESULT, observation: storedObservation }),
-    );
+    expect(writeIdentifyResult(dataResult)).toBe(true);
 
-    expect(readIdentifyResult()?.observation.imageUrl).toBe(IMAGE_URL);
+    const stored = storage.getItem("identify:result") ?? "";
+    expect(stored).not.toContain(DRAFT_IMAGE_URL);
+    expect(readIdentifyResult()?.observation.imageUrl).toBe(DRAFT_IMAGE_URL);
   });
 
   it("reports a result storage quota failure without throwing", () => {
     const storage = new MemoryStorage();
-    storage.setItem("identify:draft-image", JSON.stringify(IMAGE_URL));
+    storage.setItem("identify:draft-image", JSON.stringify(DRAFT_IMAGE_URL));
     storage.setItem = () => {
       throw new DOMException("Quota exceeded", "QuotaExceededError");
     };
     useStorage(storage);
 
     expect(writeIdentifyResult(RESULT)).toBe(false);
-    expect(storage.getItem("identify:draft-image")).toBe(JSON.stringify(IMAGE_URL));
+    expect(storage.getItem("identify:draft-image")).toBe(
+      JSON.stringify(DRAFT_IMAGE_URL),
+    );
   });
 });

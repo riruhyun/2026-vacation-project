@@ -21,7 +21,9 @@ export type IdentifyDraft = {
 };
 
 type StoredIdentifyResult = Omit<CreateObservationResponseDto, "observation"> & {
-  observation: Omit<ObservationDto, "imageUrl">;
+  observation: Omit<ObservationDto, "imageUrl"> & {
+    imageUrl?: string;
+  };
 };
 
 function getStorage() {
@@ -102,7 +104,7 @@ function isObservationResult(value: unknown): value is StoredIdentifyResult {
     typeof observation.displayName === "string" &&
     typeof observation.imagePath === "string" &&
     typeof observation.observedAt === "string" &&
-    !("imageUrl" in observation) &&
+    (!("imageUrl" in observation) || typeof observation.imageUrl === "string") &&
     typeof reward.xp === "number" &&
     typeof reward.totalXp === "number" &&
     typeof reward.level === "number" &&
@@ -160,7 +162,7 @@ export function readIdentifyResult(): CreateObservationResponseDto | null {
       ...value,
       observation: {
         ...value.observation,
-        imageUrl: draft.imageUrl,
+        imageUrl: value.observation.imageUrl ?? draft.imageUrl,
       },
     };
   }
@@ -173,7 +175,7 @@ export function writeIdentifyResult(result: CreateObservationResponseDto) {
   const storage = getStorage();
   if (!storage) return false;
 
-  const observation = {
+  const observation: StoredIdentifyResult["observation"] = {
     id: result.observation.id,
     plantId: result.observation.plantId,
     scientificName: result.observation.scientificName,
@@ -181,6 +183,11 @@ export function writeIdentifyResult(result: CreateObservationResponseDto) {
     imagePath: result.observation.imagePath,
     observedAt: result.observation.observedAt,
   };
+
+  if (!result.observation.imageUrl.startsWith("data:")) {
+    observation.imageUrl = result.observation.imageUrl;
+  }
+
   const storedResult: StoredIdentifyResult = { ...result, observation };
 
   try {

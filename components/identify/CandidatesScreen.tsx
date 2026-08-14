@@ -101,15 +101,22 @@ export function CandidatesScreen({
               }`}
             >
               <div className="flex h-full gap-4">
-                <div className="h-[118px] w-[106px] shrink-0 overflow-hidden rounded-[var(--radius-control)] bg-[var(--color-placeholder)]">
+                <div className="relative h-[118px] w-[106px] shrink-0 overflow-hidden rounded-[var(--radius-control)] bg-[var(--color-placeholder)]">
                   {candidate.imageUrl ? (
-                    // PlantNet images can be external and do not have a fixed host.
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={candidate.imageUrl}
-                      alt={candidate.koreanName}
-                      className="h-full w-full object-cover"
-                    />
+                    <>
+                      {/* PlantNet images can be external and do not have a fixed host. */}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={candidate.imageUrl}
+                        alt={candidate.koreanName}
+                        className="h-full w-full object-cover"
+                      />
+                      {candidate.imageAttribution ? (
+                        <span className="absolute inset-x-0 bottom-0 bg-black/60 px-2 py-1 text-[9px] leading-tight text-white">
+                          {candidate.imageAttribution}
+                        </span>
+                      ) : null}
+                    </>
                   ) : (
                     <div className="flex h-full items-center justify-center text-xs text-[var(--color-text-muted)]">
                       이미지 없음
