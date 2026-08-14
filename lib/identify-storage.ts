@@ -59,11 +59,13 @@ function isIdentifyCandidate(value: unknown): value is IdentifyCandidateDto {
   return (
     (typeof candidate.plantId === "number" || candidate.plantId === null) &&
     typeof candidate.official === "boolean" &&
-    (candidate.matchType === "exact" || candidate.matchType === null) &&
+    (["species", "genus"].includes(candidate.matchType as string) ||
+      candidate.matchType === null) &&
     typeof candidate.koreanName === "string" &&
     (typeof candidate.description === "string" || candidate.description === null) &&
     typeof candidate.scientificName === "string" &&
     typeof candidate.scientificNameWithAuthor === "string" &&
+    (typeof candidate.genusName === "string" || candidate.genusName === null) &&
     (typeof candidate.family === "string" || candidate.family === null) &&
     typeof candidate.score === "number" &&
     ([1, 2, 3].includes(candidate.stage as number) || candidate.stage === null) &&

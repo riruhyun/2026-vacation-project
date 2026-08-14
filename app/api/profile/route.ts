@@ -1,13 +1,18 @@
-import { getOfficialPlant, OFFICIAL_PLANTS } from '@/data/plants'
+import { getCollectionCards } from '@/lib/server/collection-cards'
 import { errorMessage, fail, ok } from '@/lib/server/http'
 import { levelProgress } from '@/lib/progress'
 import { supabase } from '@/lib/server/supabase'
 import { userIdFrom } from '@/lib/server/user'
 
-type CountRow = {
+type ObservationRow = {
+  id: string
   scientific_name: string
-  count: number
-  updated_at: string
+  observed_at: string
+}
+
+type MatchRow = {
+  observation_id: string
+  collection_card_id: number | null
 }
 
 export async function GET(request: Request) {
@@ -15,46 +20,65 @@ export async function GET(request: Request) {
   if (!userId) return fail('x-user-id에 사용자 UUID가 필요합니다.', 401)
 
   try {
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('nickname,xp,level')
-      .eq('id', userId)
-      .maybeSingle()
+    const [cards, profileResult, observationResult] = await Promise.all([
+      getCollectionCards(),
+      supabase
+        .from('profiles')
+        .select('nickname,xp,level')
+        .eq('id', userId)
+        .maybeSingle(),
+      supabase
+        .from('observations')
+        .select('id,scientific_name,observed_at')
+        .eq('user_id', userId)
+        .order('observed_at', { ascending: false }),
+    ])
 
-    if (profileError) throw profileError
+    if (profileResult.error) throw profileResult.error
+    if (observationResult.error) throw observationResult.error
 
-    const { data, error } = await supabase
-      .from('user_plant_counts')
-      .select('scientific_name,count,updated_at')
-      .eq('user_id', userId)
-      .order('updated_at', { ascending: false })
+    const observations = (observationResult.data || []) as ObservationRow[]
+    let matches: MatchRow[] = []
+    if (observations.length > 0) {
+      const { data, error } = await supabase
+        .from('observation_collection_matches')
+        .select('observation_id,collection_card_id')
+        .in('observation_id', observations.map((item) => item.id))
+      if (error) throw error
+      matches = (data || []) as MatchRow[]
+    }
 
-    if (error) throw error
-
-    const counts = (data || []) as CountRow[]
-    const officialPlants = counts.filter((item) =>
-      getOfficialPlant(item.scientific_name),
+    const matchByObservation = new Map(
+      matches.map((item) => [item.observation_id, item.collection_card_id]),
     )
-    const otherPlants = counts.length - officialPlants.length
-    const xp = profile?.xp || 0
+    const officialCardIds = new Set<number>()
+    const otherSpecies = new Set<string>()
+
+    for (const observation of observations) {
+      const cardId = matchByObservation.get(observation.id)
+      if (cardId != null) officialCardIds.add(cardId)
+      else otherSpecies.add(observation.scientific_name.toLowerCase())
+    }
+
+    const xp = profileResult.data?.xp || 0
     const progress = levelProgress(xp)
 
     return ok({
       profile: {
-        nickname: profile?.nickname || null,
+        nickname: profileResult.data?.nickname || null,
         xp,
-        level: profile?.level || progress.level,
+        level: profileResult.data?.level || progress.level,
         currentLevelXp: progress.currentXp,
         xpToNextLevel: progress.xpToNextLevel,
       },
       stats: {
-        totalObservations: counts.reduce((sum, item) => sum + item.count, 0),
-        officialPlants: officialPlants.length,
-        otherPlants,
-        completionRate: Math.round(
-          (officialPlants.length / OFFICIAL_PLANTS.length) * 100,
-        ),
-        lastObservedAt: counts[0]?.updated_at || null,
+        totalObservations: observations.length,
+        officialPlants: officialCardIds.size,
+        otherPlants: otherSpecies.size,
+        completionRate: cards.length
+          ? Math.round((officialCardIds.size / cards.length) * 100)
+          : 0,
+        lastObservedAt: observations[0]?.observed_at || null,
       },
     })
   } catch (error) {

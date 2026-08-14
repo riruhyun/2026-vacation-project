@@ -74,15 +74,24 @@ export async function getForestPlant(
 
   if (!plantNumber) return null
 
+  return getForestPlantByNumber(plantNumber, item)
+}
+
+export async function getForestPlantByNumber(
+  plantNumber: string,
+  searchItem?: string,
+) {
   const detailXml = await request('plantPilbkInfo', {
     reqPlantPilbkNo: plantNumber,
   })
 
   return {
     koreanName:
-      value(detailXml, 'plantGnrlNm') || value(item, 'plantGnrlNm'),
+      value(detailXml, 'plantGnrlNm') ||
+      (searchItem ? value(searchItem, 'plantGnrlNm') : null),
     scientificName:
-      value(detailXml, 'plantSpecsScnm') || value(item, 'plantSpecsScnm'),
+      value(detailXml, 'plantSpecsScnm') ||
+      (searchItem ? value(searchItem, 'plantSpecsScnm') : null),
     description: value(detailXml, 'shpe') || value(detailXml, 'spft'),
   }
 }

@@ -6,11 +6,12 @@ import type { CreateObservationResponseDto } from "@/types/observation";
 const CANDIDATE: IdentifyCandidateDto = {
   plantId: 1,
   official: true,
-  matchType: "exact",
+  matchType: "species",
   koreanName: "질경이",
   description: null,
   scientificName: "Plantago asiatica",
   scientificNameWithAuthor: "Plantago asiatica L.",
+  genusName: "Plantago",
   family: "Plantaginaceae",
   score: 0.9,
   stage: 1,
@@ -86,6 +87,12 @@ describe("resolveObservationResult", () => {
     expect(result).toEqual(SAVED_RESULT);
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(fetchMock.mock.calls[1]?.[0]).toBe("/api/observations");
+    const request = fetchMock.mock.calls[1]?.[1] as RequestInit;
+    const form = request.body as FormData;
+    expect(form.get("plantId")).toBe("1");
+    expect(form.get("scientificName")).toBe("Plantago asiatica");
+    expect(form.get("genusName")).toBe("Plantago");
+    expect(form.get("identificationScore")).toBe("0.9");
   });
 
   it("does not start the observation POST when the attempt aborts during image loading", async () => {

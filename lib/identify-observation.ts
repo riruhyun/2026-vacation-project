@@ -23,14 +23,21 @@ export async function resolveObservationResult(
   signal?.throwIfAborted();
 
   return saveObservation(
-    candidate.plantId != null
-      ? { image, plantId: candidate.plantId }
-      : {
-          image,
-          plantId: null,
+    {
+      image,
+      plantId: candidate.plantId,
+      scientificName: candidate.scientificName,
+      genusName: candidate.genusName,
+      displayName: candidate.koreanName,
+      identificationScore: candidate.score,
+      identificationCandidates: [
+        {
           scientificName: candidate.scientificName,
-          displayName: candidate.koreanName,
+          genusName: candidate.genusName,
+          score: candidate.score,
         },
+      ],
+    },
     signal,
   );
 }

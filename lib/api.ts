@@ -111,10 +111,19 @@ export function saveObservation(
 
   if (input.plantId != null) {
     form.append('plantId', String(input.plantId))
-  } else {
-    // 기타 식물은 학명과 표시명을 직접 넘겨야 합니다.
-    if (input.scientificName) form.append('scientificName', input.scientificName)
-    if (input.displayName) form.append('displayName', input.displayName)
+  }
+
+  if (input.scientificName) form.append('scientificName', input.scientificName)
+  if (input.genusName) form.append('genusName', input.genusName)
+  if (input.displayName) form.append('displayName', input.displayName)
+  if (input.identificationScore != null) {
+    form.append('identificationScore', String(input.identificationScore))
+  }
+  if (input.identificationCandidates) {
+    form.append(
+      'identificationCandidates',
+      JSON.stringify(input.identificationCandidates),
+    )
   }
 
   return request<CreateObservationResponseDto>('/api/observations', {

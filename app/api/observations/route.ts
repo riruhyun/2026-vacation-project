@@ -1,7 +1,7 @@
-import { getOfficialPlant, getOfficialPlantById } from '@/data/plants'
 import { errorMessage, fail, ok } from '@/lib/server/http'
 import { imageError, imageExtension, imageUrl } from '@/lib/server/image'
 import { toObservationDto } from '@/lib/server/observation'
+import { getCollectionCardById } from '@/lib/server/collection-cards'
 import { BASE_XP_BY_STAGE, levelProgress } from '@/lib/progress'
 import { supabase } from '@/lib/server/supabase'
 import { userIdFrom } from '@/lib/server/user'
@@ -11,10 +11,11 @@ export const runtime = 'nodejs'
 type RewardRow = {
   observation_id: string
   observed_at: string
-  plant_count: number
+  collection_count: number
   xp_awarded: number
   total_xp: number
   user_level: number
+  collection_display_name: string
 }
 
 function text(form: FormData, key: string) {
@@ -49,22 +50,45 @@ export async function POST(request: Request) {
     }
 
     const submittedScientificName = text(form, 'scientificName')
-    const officialPlant =
-      plantId !== null
-        ? getOfficialPlantById(plantId)
-        : getOfficialPlant(submittedScientificName)
+    const genusName = text(form, 'genusName') || null
+    const displayName = text(form, 'displayName')
+    const scoreText = text(form, 'identificationScore')
+    const identificationScore = scoreText ? Number(scoreText) : null
 
-    if (plantId !== null && !officialPlant) {
+    if (!submittedScientificName) {
+      return fail('scientificName이 필요합니다.')
+    }
+
+    if (
+      identificationScore !== null &&
+      (!Number.isFinite(identificationScore) ||
+        identificationScore < 0 ||
+        identificationScore > 1)
+    ) {
+      return fail('identificationScore가 올바르지 않습니다.')
+    }
+
+    let candidates: unknown[] = []
+    const candidatesText = text(form, 'identificationCandidates')
+    if (candidatesText) {
+      try {
+        const parsed = JSON.parse(candidatesText) as unknown
+        if (!Array.isArray(parsed)) throw new Error('not an array')
+        candidates = parsed
+      } catch {
+        return fail('identificationCandidates가 올바르지 않습니다.')
+      }
+    }
+
+    const collectionCard =
+      plantId !== null ? await getCollectionCardById(plantId) : null
+
+    if (plantId !== null && !collectionCard) {
       return fail('공식 식물을 찾을 수 없습니다.', 404)
     }
 
-    const scientificName =
-      officialPlant?.scientificName || submittedScientificName
-    const displayName =
-      officialPlant?.koreanName || text(form, 'displayName')
-
-    if (!scientificName || !displayName) {
-      return fail('기타 식물은 scientificName과 displayName이 필요합니다.')
+    if (!collectionCard && !displayName) {
+      return fail('기타 식물은 displayName이 필요합니다.')
     }
 
     const path = `${userId}/${crypto.randomUUID()}.${imageExtension(image)}`
@@ -78,14 +102,18 @@ export async function POST(request: Request) {
     if (uploadError) throw uploadError
 
     const { data, error: insertError } = await supabase.rpc(
-      'record_observation_reward',
+      'record_collection_observation_reward',
       {
         p_user_id: userId,
-        p_scientific_name: scientificName,
+        p_collection_card_id: collectionCard?.id ?? null,
+        p_identified_scientific_name: submittedScientificName,
+        p_identified_genus_name: genusName,
         p_display_name: displayName,
         p_image_path: path,
-        p_base_xp: officialPlant
-          ? BASE_XP_BY_STAGE[officialPlant.stage]
+        p_identification_score: identificationScore,
+        p_candidates: candidates,
+        p_base_xp: collectionCard
+          ? BASE_XP_BY_STAGE[collectionCard.stage]
           : 0,
       },
     )
@@ -106,26 +134,26 @@ export async function POST(request: Request) {
     ).level
     const observation = {
       id: reward.observation_id,
-      scientific_name: scientificName,
-      display_name: displayName,
+      scientific_name: submittedScientificName,
+      display_name: reward.collection_display_name,
       image_path: path,
       observed_at: reward.observed_at,
     }
 
     return ok(
       {
-        result: reward.plant_count === 1 ? 'new' : 'duplicate',
+        result: reward.collection_count === 1 ? 'new' : 'duplicate',
         observation: toObservationDto(
           observation,
           imageUrl(observation.image_path),
-          officialPlant?.id ?? null,
+          collectionCard?.id ?? null,
         ),
         reward: {
           xp: reward.xp_awarded,
           totalXp: reward.total_xp,
           level: reward.user_level,
           leveledUp: reward.user_level > previousLevel,
-          plantCount: reward.plant_count,
+          plantCount: reward.collection_count,
         },
       },
       201,

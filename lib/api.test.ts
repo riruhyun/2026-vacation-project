@@ -105,7 +105,7 @@ describe("saveObservation", () => {
     expect(init.signal).toBe(controller.signal);
   });
 
-  it("sends only plantId for an official candidate", async () => {
+  it("sends the collection card id while preserving the identified taxon", async () => {
     const fetchMock = vi.fn().mockResolvedValue(success(OBSERVATION_RESPONSE, 201));
     vi.stubGlobal("fetch", fetchMock);
     const image = new File(["image"], "plant.jpg", { type: "image/jpeg" });
@@ -113,15 +113,19 @@ describe("saveObservation", () => {
     await saveObservation({
       image,
       plantId: 1,
-      scientificName: "ignored",
-      displayName: "ignored",
+      scientificName: "Plantago asiatica",
+      genusName: "Plantago",
+      displayName: "질경이",
+      identificationScore: 0.91,
     });
 
     const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     const form = init.body as FormData;
     expect(form.get("plantId")).toBe("1");
-    expect(form.has("scientificName")).toBe(false);
-    expect(form.has("displayName")).toBe(false);
+    expect(form.get("scientificName")).toBe("Plantago asiatica");
+    expect(form.get("genusName")).toBe("Plantago");
+    expect(form.get("displayName")).toBe("질경이");
+    expect(form.get("identificationScore")).toBe("0.91");
   });
 
   it("sends scientificName and displayName for an unofficial candidate", async () => {

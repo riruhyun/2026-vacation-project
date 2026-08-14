@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  readIdentifyCandidates,
   readIdentifyResult,
   writeIdentifyDraft,
+  writeIdentifyCandidates,
   writeIdentifyResult,
 } from "@/lib/identify-storage";
 import type { CreateObservationResponseDto } from "@/types/observation";
@@ -64,6 +66,38 @@ function useStorage(storage: Storage) {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+});
+
+describe("identify candidate storage", () => {
+  it("accepts species and genus collection match types", () => {
+    const storage = new MemoryStorage();
+    useStorage(storage);
+    const response = {
+      remainingRequests: 10,
+      candidates: [
+        {
+          plantId: 14,
+          official: true,
+          matchType: "genus" as const,
+          koreanName: "민들레",
+          description: null,
+          scientificName: "Taraxacum officinale",
+          scientificNameWithAuthor: "Taraxacum officinale F.H.Wigg.",
+          genusName: "Taraxacum",
+          family: "Asteraceae",
+          score: 0.8,
+          stage: 1 as const,
+          rarity: "common" as const,
+          imageUrl: null,
+          imageAttribution: null,
+        },
+      ],
+    };
+
+    writeIdentifyCandidates(response);
+
+    expect(readIdentifyCandidates()).toEqual(response);
+  });
 });
 
 describe("identify result storage", () => {
