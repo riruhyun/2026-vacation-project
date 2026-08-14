@@ -4,20 +4,31 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import PageHeader from "@/components/layout/PageHeader";
 import Button from "@/components/ui/Button";
-import { getMockObservationResult } from "@/lib/data";
+import { ApiError, saveObservation } from "@/lib/api";
 import { writeIdentifyResult } from "@/lib/identify-storage";
 import type { IdentifyCandidateDto } from "@/types/identify";
 
 interface CandidatesScreenProps {
   candidates: IdentifyCandidateDto[];
+  imageUrl: string;
 }
 
 function formatConfidence(score: number) {
   return `${Math.round(score * 100)}%`;
 }
 
+async function capturedFile(imageUrl: string) {
+  const response = await fetch(imageUrl);
+  if (!response.ok) throw new Error("촬영 이미지를 불러오지 못했습니다.");
+
+  const blob = await response.blob();
+  const extension = blob.type === "image/png" ? "png" : "jpg";
+  return new File([blob], `plant.${extension}`, { type: blob.type });
+}
+
 export function CandidatesScreen({
   candidates,
+  imageUrl,
 }: CandidatesScreenProps) {
   const router = useRouter();
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -31,14 +42,33 @@ export function CandidatesScreen({
     setIsSaving(true);
     setError(null);
     try {
-      const result = await getMockObservationResult(selected);
+      const image = await capturedFile(imageUrl);
+      const result = await saveObservation(
+        selected.plantId != null
+          ? { image, plantId: selected.plantId }
+          : {
+              image,
+              plantId: null,
+              scientificName: selected.scientificName,
+              displayName: selected.koreanName,
+            },
+      );
       if (!writeIdentifyResult(result)) {
         setError("관찰 결과를 임시 저장하지 못했어요. 저장 공간을 확인하고 다시 시도해 주세요.");
         return;
       }
-      router.push("/identify?step=result");
-    } catch {
-      setError("관찰 결과를 만들지 못했어요. 다시 시도해 주세요.");
+      router.replace("/identify?step=result");
+    } catch (caught) {
+      if (caught instanceof ApiError && caught.isUnauthorized) {
+        router.push("/login?next=%2Fidentify%3Fstep%3Dcandidates");
+        return;
+      }
+
+      setError(
+        caught instanceof ApiError
+          ? caught.message
+          : "관찰 기록을 저장하지 못했어요. 다시 시도해 주세요.",
+      );
     } finally {
       setIsSaving(false);
     }
