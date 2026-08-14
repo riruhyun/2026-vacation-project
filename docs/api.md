@@ -136,3 +136,11 @@ console.log(saved.reward) // xp, totalXp, level, leveledUp, plantCount
 | `featuredPlantIds` | 선택 | 대표 식물 도감 id. 최대 3개, 중복 불가, 수집한 식물만 가능 |
 
 한 번이라도 저장하면 `profile.onboarded`가 `true`가 되고, 그 뒤로는 온보딩 화면으로 보내지 않습니다.
+
+## 이메일 인증 API
+
+- `POST /api/auth/signup`: `email`, `password`, 선택적 `nickname`으로 회원가입합니다. 이메일 확인 설정이 꺼져 있으면 즉시 로그인 쿠키도 발급합니다.
+- `POST /api/auth/login`: `email`, `password`로 로그인하고 `plant-access-token` HttpOnly 쿠키를 설정합니다.
+- `POST /api/auth/logout`: 현재 세션을 폐기하고 로그인 쿠키를 제거합니다.
+
+Swagger(`/api-docs`)에서는 `Auth`의 로그인 API를 한 번 실행한 뒤 보호 API를 실행하면 쿠키가 자동으로 함께 전송됩니다. 별도로 토큰을 복사할 필요가 없습니다. 외부 API 클라이언트는 로그인 응답의 `accessToken`을 `Authorization: Bearer <token>`으로 보낼 수도 있습니다.

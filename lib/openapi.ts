@@ -12,7 +12,7 @@ const errorResponse = (description: string) => ({
   content: jsonContent({ $ref: "#/components/schemas/ApiFailure" }),
 });
 
-const userSecurity = [{ BearerAuth: [] }] as const;
+const userSecurity = [{ BearerAuth: [] }, { CookieAuth: [] }] as const;
 
 export const openApiDocument = {
   openapi: "3.0.3",
@@ -24,12 +24,66 @@ export const openApiDocument = {
   },
   servers: [{ url: "/", description: "현재 애플리케이션" }],
   tags: [
+    { name: "Auth", description: "Email signup, login, and logout" },
     { name: "System", description: "서버 상태 확인" },
     { name: "Plants", description: "식물 판별 및 상세 정보" },
     { name: "Collection", description: "사용자 관찰 기록과 수집 현황" },
     { name: "Profile", description: "사용자 프로필과 진행도" },
   ],
   paths: {
+    "/api/auth/signup": {
+      post: {
+        tags: ["Auth"],
+        summary: "Sign up with email",
+        description:
+          "Creates a Supabase account. If email confirmation is disabled, the response also starts an HttpOnly cookie session.",
+        operationId: "signupWithEmail",
+        requestBody: {
+          required: true,
+          content: jsonContent({ $ref: "#/components/schemas/SignupInput" }),
+        },
+        responses: {
+          "201": successResponse("Account created", "AuthResponse"),
+          "400": errorResponse("Invalid input or signup rejected"),
+          "429": errorResponse("Too many requests"),
+          "500": errorResponse("Signup processing failed"),
+        },
+      },
+    },
+    "/api/auth/login": {
+      post: {
+        tags: ["Auth"],
+        summary: "Log in with email",
+        description:
+          "Sets an HttpOnly session cookie. In Swagger, run this once and protected endpoints will automatically receive the cookie; no token copy is required.",
+        operationId: "loginWithEmail",
+        requestBody: {
+          required: true,
+          content: jsonContent({ $ref: "#/components/schemas/LoginInput" }),
+        },
+        responses: {
+          "200": successResponse("Login completed", "AuthResponse"),
+          "400": errorResponse("Invalid input"),
+          "401": errorResponse("Invalid email or password"),
+          "403": errorResponse("Email confirmation required"),
+          "429": errorResponse("Too many requests"),
+          "500": errorResponse("Login processing failed"),
+        },
+      },
+    },
+    "/api/auth/logout": {
+      post: {
+        tags: ["Auth"],
+        summary: "Log out",
+        description:
+          "Revokes the current Supabase refresh session when possible and always removes the local session cookie.",
+        operationId: "logout",
+        security: [{}, ...userSecurity],
+        responses: {
+          "200": successResponse("Logout completed", "LogoutResponse"),
+        },
+      },
+    },
     "/api/health": {
       get: {
         tags: ["System"],
@@ -43,6 +97,22 @@ export const openApiDocument = {
       },
     },
     "/api/profile": {
+      patch: {
+        tags: ["Profile"],
+        summary: "Update nickname and featured plants",
+        operationId: "updateProfile",
+        security: userSecurity,
+        requestBody: {
+          required: true,
+          content: jsonContent({ $ref: "#/components/schemas/UpdateProfileInput" }),
+        },
+        responses: {
+          "200": successResponse("Updated profile", "ProfileResponse"),
+          "400": errorResponse("Invalid nickname or featured plant selection"),
+          "401": errorResponse("Login required"),
+          "500": errorResponse("Profile update failed"),
+        },
+      },
       get: {
         tags: ["Profile"],
         summary: "프로필과 진행도 조회",
@@ -188,8 +258,92 @@ export const openApiDocument = {
         scheme: "bearer",
         bearerFormat: "Supabase access token",
       },
+      CookieAuth: {
+        type: "apiKey",
+        in: "cookie",
+        name: "plant-access-token",
+        description: "HttpOnly session cookie set by POST /api/auth/login",
+      },
     },
     schemas: {
+      LoginInput: {
+        type: "object",
+        required: ["email", "password"],
+        properties: {
+          email: { type: "string", format: "email", example: "user@example.com" },
+          password: { type: "string", format: "password", minLength: 6 },
+        },
+      },
+      SignupInput: {
+        type: "object",
+        required: ["email", "password"],
+        properties: {
+          email: { type: "string", format: "email", example: "user@example.com" },
+          password: { type: "string", format: "password", minLength: 6 },
+          nickname: {
+            type: "string",
+            minLength: 1,
+            maxLength: 20,
+            default: "Plant Explorer",
+          },
+        },
+      },
+      AuthResponse: {
+        type: "object",
+        required: ["success", "data"],
+        properties: {
+          success: { type: "boolean", enum: [true] },
+          data: {
+            type: "object",
+            required: [
+              "user",
+              "authenticated",
+              "emailConfirmationRequired",
+              "accessToken",
+              "expiresAt",
+            ],
+            properties: {
+              user: {
+                type: "object",
+                required: ["id", "email"],
+                properties: {
+                  id: { type: "string", format: "uuid" },
+                  email: { type: "string", format: "email" },
+                },
+              },
+              authenticated: { type: "boolean" },
+              emailConfirmationRequired: { type: "boolean" },
+              accessToken: { type: "string", nullable: true },
+              expiresAt: { type: "integer", nullable: true },
+            },
+          },
+        },
+      },
+      LogoutResponse: {
+        type: "object",
+        required: ["success", "data"],
+        properties: {
+          success: { type: "boolean", enum: [true] },
+          data: {
+            type: "object",
+            required: ["authenticated"],
+            properties: { authenticated: { type: "boolean", enum: [false] } },
+          },
+        },
+      },
+      UpdateProfileInput: {
+        type: "object",
+        minProperties: 1,
+        properties: {
+          nickname: { type: "string", minLength: 1, maxLength: 20 },
+          featuredPlantIds: {
+            type: "array",
+            maxItems: 3,
+            uniqueItems: true,
+            items: { type: "integer", minimum: 1 },
+          },
+        },
+      },
       ApiFailure: {
         type: "object",
         required: ["success", "error"],

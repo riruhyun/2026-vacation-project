@@ -21,6 +21,16 @@ function cookieToken(request: Request) {
   return null
 }
 
+/** Bearer 토큰을 우선하고, 없으면 로그인 응답이 설정한 세션 쿠키를 사용합니다. */
+export function accessTokenFrom(request: Request) {
+  const authorization = request.headers.get('authorization')
+  const bearer = authorization?.startsWith('Bearer ')
+    ? authorization.slice(7).trim()
+    : null
+
+  return bearer || cookieToken(request)
+}
+
 /**
  * 라우트 핸들러를 호출한 사용자를 확인합니다.
  * Authorization 헤더의 Bearer 토큰을 먼저 보고, 없으면 세션 쿠키를 봅니다.
@@ -29,7 +39,7 @@ function cookieToken(request: Request) {
 export async function userIdFrom(request: Request) {
   const authorization = request.headers.get('authorization')
   const bearer = authorization?.startsWith('Bearer ')
-    ? authorization.slice(7)
+    ? authorization.slice(7).trim()
     : null
 
   return (await userIdFromToken(bearer)) ?? (await userIdFromToken(cookieToken(request)))
