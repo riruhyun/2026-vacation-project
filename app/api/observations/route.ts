@@ -24,8 +24,8 @@ function text(form: FormData, key: string) {
 }
 
 export async function POST(request: Request) {
-  const userId = userIdFrom(request)
-  if (!userId) return fail('x-user-id에 사용자 UUID가 필요합니다.', 401)
+  const userId = await userIdFrom(request)
+  if (!userId) return fail('로그인이 필요합니다.', 401)
 
   try {
     let form: FormData

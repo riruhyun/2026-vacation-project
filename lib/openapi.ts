@@ -12,7 +12,7 @@ const errorResponse = (description: string) => ({
   content: jsonContent({ $ref: "#/components/schemas/ApiFailure" }),
 });
 
-const userIdSecurity = [{ UserId: [] }] as const;
+const userSecurity = [{ BearerAuth: [] }] as const;
 
 export const openApiDocument = {
   openapi: "3.0.3",
@@ -47,7 +47,7 @@ export const openApiDocument = {
         tags: ["Profile"],
         summary: "프로필과 진행도 조회",
         operationId: "getProfile",
-        security: userIdSecurity,
+        security: userSecurity,
         responses: {
           "200": successResponse("프로필과 수집 통계", "ProfileResponse"),
           "401": errorResponse("유효한 사용자 ID가 없음"),
@@ -60,7 +60,7 @@ export const openApiDocument = {
         tags: ["Collection"],
         summary: "식물 수집 현황 조회",
         operationId: "getCollection",
-        security: userIdSecurity,
+        security: userSecurity,
         responses: {
           "200": successResponse("수집 현황", "CollectionResponse"),
           "401": errorResponse("유효한 사용자 ID가 없음"),
@@ -75,7 +75,7 @@ export const openApiDocument = {
         description:
           "사용자 ID를 함께 보내면 해당 사용자의 관찰 기록도 반환합니다.",
         operationId: "getPlant",
-        security: [{}, { UserId: [] }],
+        security: [{}, ...userSecurity],
         parameters: [
           {
             name: "id",
@@ -114,12 +114,6 @@ export const openApiDocument = {
                     format: "binary",
                     description: "6MB 이하 JPG 또는 PNG 이미지",
                   },
-                  organ: {
-                    type: "string",
-                    enum: ["auto", "flower", "leaf", "fruit"],
-                    default: "auto",
-                    description: "판별할 식물 부위",
-                  },
                 },
               },
             },
@@ -127,7 +121,7 @@ export const openApiDocument = {
         },
         responses: {
           "200": successResponse("식물 판별 후보", "IdentifyResponse"),
-          "400": errorResponse("잘못된 이미지 또는 식물 부위"),
+          "400": errorResponse("잘못된 이미지"),
           "422": errorResponse("사진에서 식물을 판별하지 못함"),
           "500": errorResponse("서버 설정 오류 또는 판별 처리 실패"),
           "502": errorResponse("Pl@ntNet 요청 실패"),
@@ -141,7 +135,7 @@ export const openApiDocument = {
         description:
           "식물 사진을 저장하고 발견 횟수, 경험치 및 레벨을 갱신합니다. 파일 크기는 최대 6MB입니다.",
         operationId: "createObservation",
-        security: userIdSecurity,
+        security: userSecurity,
         requestBody: {
           required: true,
           content: {
@@ -189,11 +183,10 @@ export const openApiDocument = {
   },
   components: {
     securitySchemes: {
-      UserId: {
-        type: "apiKey",
-        in: "header",
-        name: "x-user-id",
-        description: "Supabase 사용자 UUID",
+      BearerAuth: {
+        type: "http",
+        scheme: "bearer",
+        bearerFormat: "Supabase access token",
       },
     },
     schemas: {
@@ -243,10 +236,14 @@ export const openApiDocument = {
           success: { type: "boolean", enum: [true] },
           data: {
             type: "object",
-            required: ["profile", "stats"],
+            required: ["profile", "stats", "recentActivities"],
             properties: {
               profile: { $ref: "#/components/schemas/Profile" },
               stats: { $ref: "#/components/schemas/ProfileStats" },
+              recentActivities: {
+                type: "array",
+                items: { $ref: "#/components/schemas/ActivityLog" },
+              },
             },
           },
         },
@@ -277,6 +274,27 @@ export const openApiDocument = {
           otherPlants: { type: "integer", minimum: 0, example: 1 },
           completionRate: { type: "integer", minimum: 0, maximum: 100, example: 8 },
           lastObservedAt: { type: "string", nullable: true, format: "date-time" },
+        },
+      },
+      ActivityLog: {
+        type: "object",
+        required: [
+          "id",
+          "type",
+          "scientificName",
+          "displayName",
+          "level",
+          "levelTitle",
+          "createdAt",
+        ],
+        properties: {
+          id: { type: "string", format: "uuid" },
+          type: { type: "string", enum: ["new_plant", "level_up"] },
+          scientificName: { type: "string", nullable: true },
+          displayName: { type: "string", nullable: true },
+          level: { type: "integer", nullable: true },
+          levelTitle: { type: "string", nullable: true },
+          createdAt: { type: "string", format: "date-time" },
         },
       },
       CollectionResponse: {

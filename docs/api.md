@@ -12,7 +12,7 @@
 
 ## 데이터 구성
 
-- 공식 도감 50종: `data/plants.ts`
+- 공식 도감 50종: Supabase `collection_cards` 테이블 (`supabase/collection-cards-migration.sql`)
 - 식별: Pl@ntNet
 - 한국 이름과 설명: 산림청 국립수목원 API
 - 사용자 XP, 레벨, 식물별 발견 횟수와 관찰 기록: Supabase
@@ -65,19 +65,17 @@ console.log(saved.result) // new 또는 duplicate
 console.log(saved.reward) // xp, totalXp, level, leveledUp, plantCount
 ```
 
-인증 연결 전 사용자 구분은 `x-user-id` 헤더를 사용합니다. `lib/api.ts`에서는 다음 한 줄로 설정합니다.
+사용자 구분은 Supabase 세션의 액세스 토큰을 씁니다. 클라이언트는 사용자별 API 요청에
+`Authorization: Bearer <액세스 토큰>` 헤더를 붙여야 합니다. 서버 컴포넌트에서 조회할 때는
+같은 토큰을 `plant-access-token` 쿠키에 저장할 수 있습니다 (`lib/server/current-user.ts`).
 
-```ts
-import { setUserId } from '@/lib/api'
-
-setUserId('Supabase Auth 사용자 UUID')
-```
+토큰이 없거나 만료됐으면 API는 401 `로그인이 필요합니다.`를 돌려줍니다. `ApiError.isUnauthorized`로 확인할 수 있습니다.
 
 ## POST /api/identify
 
 `multipart/form-data`로 JPG 또는 PNG `image` 파일 하나를 보냅니다. 최대 크기는 6MB입니다.
 
-선택한 식물 부위는 `organ` 필드로 함께 보낼 수 있습니다. 허용값은 `flower`, `leaf`, `fruit`이며, `auto`이거나 필드를 생략하면 Pl@ntNet 자동 판별을 사용합니다.
+보낼 값은 `image` 하나뿐입니다. 식물 부위는 Pl@ntNet이 스스로 판별합니다.
 
 처리 순서는 다음과 같습니다.
 
@@ -87,7 +85,7 @@ setUserId('Supabase Auth 사용자 UUID')
 
 ## POST /api/observations
 
-`x-user-id`와 `multipart/form-data`가 필요합니다.
+로그인과 `multipart/form-data`가 필요합니다.
 
 | 필드 | 필수 | 설명 |
 | --- | --- | --- |
@@ -122,4 +120,19 @@ setUserId('Supabase Auth 사용자 UUID')
 - `GET /api/profile`: 닉네임, 누적 XP, 레벨, 현재 레벨 XP, 다음 레벨 요구 XP, 수집 통계
 - `GET /api/health`: 환경변수 설정 여부 확인. 외부 API 요청은 보내지 않음
 
-사용자별 API는 `x-user-id`가 필요합니다. 실제 로그인 연결 시 `lib/server/user.ts`와 `lib/api.ts`의 사용자 헤더 부분만 Supabase Auth 세션으로 교체하면 됩니다.
+사용자별 API는 로그인이 필요합니다. 토큰 확인은 `lib/server/user.ts` 한 곳에서 합니다.
+
+## PATCH /api/profile
+
+닉네임과 대표 식물을 저장합니다. 보낸 항목만 바뀝니다.
+
+```json
+{ "nickname": "초록수집가", "featuredPlantIds": [1, 8, 14] }
+```
+
+| 필드 | 필수 | 설명 |
+| --- | --- | --- |
+| `nickname` | 선택 | 1자 이상 20자 이하 |
+| `featuredPlantIds` | 선택 | 대표 식물 도감 id. 최대 3개, 중복 불가, 수집한 식물만 가능 |
+
+한 번이라도 저장하면 `profile.onboarded`가 `true`가 되고, 그 뒤로는 온보딩 화면으로 보내지 않습니다.

@@ -30,7 +30,7 @@ export async function GET(
       ? await getForestPlantByNumber(card.representativePlantPilbkNo)
       : await getForestPlant(card.scientificName)
 
-    const userId = userIdFrom(request)
+    const userId = await userIdFrom(request)
     let observations: ObservationRow[] = []
 
     if (userId) {
