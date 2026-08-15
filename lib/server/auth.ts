@@ -18,9 +18,3 @@ export function createPublicAuthClient() {
     },
   })
 }
-
-export function authErrorStatus(error: { status?: number; code?: string }) {
-  if (error.code === 'email_not_confirmed') return 403
-  if (error.status === 429) return 429
-  return 401
-}

@@ -38,7 +38,6 @@ vi.mock('@/lib/server/supabase', () => ({
 }))
 
 vi.mock('@/lib/server/auth', () => ({
-  authErrorStatus: () => 401,
   createPublicAuthClient: () => ({
     auth: {
       signInWithPassword: authMocks.signInWithPassword,

@@ -2,6 +2,15 @@ import { AUTH_COOKIE } from '@/lib/auth-cookie'
 import { NICKNAME_MAX_LENGTH } from '@/lib/profile-limits'
 
 export const AUTH_PASSWORD_MIN_LENGTH = 6
+
+/**
+ * 이름을 알 수 없을 때 쓰는 닉네임입니다.
+ *
+ * 아이디 가입은 아이디를 닉네임으로 쓰므로 여기까지 오지 않습니다.
+ * 실제로 이 값이 들어가는 곳은 구글 가입이고, 판단은 DB 트리거가 합니다
+ * (supabase/profile-onboarding-migration.sql의 handle_new_user).
+ * 같은 문자열이 SQL에도 적혀 있으니 바꿀 때는 두 곳을 함께 고쳐야 합니다.
+ */
 export const DEFAULT_NICKNAME = '식물 탐험가'
 
 export const LOCAL_ID_MIN_LENGTH = 3
