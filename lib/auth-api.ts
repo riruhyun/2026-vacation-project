@@ -1,8 +1,6 @@
 import { AUTH_COOKIE } from '@/lib/auth-cookie'
-import { NICKNAME_MAX_LENGTH } from '@/lib/profile-limits'
 
 export const AUTH_PASSWORD_MIN_LENGTH = 6
-export const DEFAULT_NICKNAME = '식물 탐험가'
 
 /**
  * 로그인 화면이 어떤 안내를 띄울지 고르는 값입니다.
@@ -12,8 +10,8 @@ export type AuthFailureReason =
   | 'google_only'
   | 'not_registered'
   | 'invalid_password'
-  | 'already_registered'
   | 'email_not_confirmed'
+  | 'signup_closed'
 
 export const AUTH_MESSAGES = {
   /** 구글로만 가입된 계정에 이메일/비밀번호로 들어오려는 경우입니다. */
@@ -21,17 +19,13 @@ export const AUTH_MESSAGES = {
     '이 계정은 Google로 가입되었습니다. 이메일/비밀번호를 사용하려면 사이트 전용 비밀번호를 먼저 설정해 주세요.',
   notRegistered: '가입되지 않은 이메일입니다. Google로 시작해 주세요.',
   invalidPassword: '비밀번호가 올바르지 않습니다.',
-  alreadyRegistered: '이미 가입된 이메일입니다. Google로 계속하기를 사용해 주세요.',
   emailNotConfirmed: '이메일 확인이 필요합니다.',
+  signupClosed: '회원가입은 Google로만 가능합니다. Google로 계속하기를 사용해 주세요.',
 } as const
 
 type AuthInput = {
   email: string
   password: string
-}
-
-export type SignupInput = AuthInput & {
-  nickname: string
 }
 
 type ParseResult<T> =
@@ -73,28 +67,6 @@ function credentialsFrom(body: unknown): ParseResult<AuthInput> {
 
 export function parseLoginInput(body: unknown): ParseResult<AuthInput> {
   return credentialsFrom(body)
-}
-
-export function parseSignupInput(body: unknown): ParseResult<SignupInput> {
-  const credentials = credentialsFrom(body)
-  if (!credentials.success) return credentials
-
-  const input = body as Record<string, unknown>
-  if (input.nickname !== undefined && typeof input.nickname !== 'string') {
-    return { success: false, message: 'nickname은 문자열이어야 합니다.' }
-  }
-
-  const nickname =
-    typeof input.nickname === 'string' ? input.nickname.trim() : DEFAULT_NICKNAME
-
-  if (nickname.length < 1 || nickname.length > NICKNAME_MAX_LENGTH) {
-    return {
-      success: false,
-      message: `nickname은 1자 이상 ${NICKNAME_MAX_LENGTH}자 이하여야 합니다.`,
-    }
-  }
-
-  return { success: true, data: { ...credentials.data, nickname } }
 }
 
 /** 사이트 전용 비밀번호를 설정할 때 쓰는 본문입니다. 이미 로그인한 사용자만 부를 수 있습니다. */

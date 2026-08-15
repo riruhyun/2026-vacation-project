@@ -165,7 +165,13 @@ console.log(saved.reward) // xp, totalXp, level, leveledUp, plantCount
 | `not_registered` | 401 | 가입 이력이 없습니다. 구글로 시작해야 합니다 |
 | `email_not_confirmed` | 403 | 이메일 확인이 필요합니다 |
 
-`POST /api/auth/signup`은 이미 가입된 이메일이면 409로 막습니다 (`google_only` 또는 `already_registered`). Supabase는 계정 목록을 캐내지 못하도록 중복 가입에도 성공한 것처럼 응답하는데, 그러면 구글로 가입한 사용자가 "가입은 됐다는데 로그인은 안 되는" 상태에 빠집니다.
+### 이메일 회원가입은 받지 않습니다
+
+`POST /api/auth/signup`은 항상 403 `signup_closed`를 돌려줍니다.
+
+이메일과 비밀번호만으로 계정을 만들 수 있으면, 메일함 주인임을 증명하지 않고도 남의 주소를 선점할 수 있습니다. Supabase는 이메일이 같은 계정을 자동으로 합치므로, 주인이 나중에 구글로 들어오는 순간 선점한 사람이 그 계정에 함께 들어갑니다. 구글은 이 증명을 구글이 대신 해주기 때문에 같은 문제가 없습니다.
+
+라우트를 삭제하지 않고 남겨둔 것은 예전 클라이언트가 404 대신 이유를 받도록 하기 위해서입니다.
 
 ### 알려진 제약
 
@@ -173,7 +179,7 @@ console.log(saved.reward) // xp, totalXp, level, leveledUp, plantCount
 
 ### 엔드포인트
 
-- `POST /api/auth/signup`: `email`, `password`, 선택적 `nickname`으로 계정을 만듭니다. 이미 가입된 이메일은 409로 막습니다.
+- `POST /api/auth/signup`: 받지 않습니다. 항상 403 `signup_closed`입니다.
 - `POST /api/auth/login`: `email`, `password`로 로그인하고 `plant-access-token` HttpOnly 쿠키를 설정합니다.
 - `POST /api/auth/password`: 로그인한 사용자의 사이트 전용 비밀번호를 설정합니다.
 - `POST /api/auth/logout`: 현재 세션을 폐기하고 로그인 쿠키를 제거합니다.

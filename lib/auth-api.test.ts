@@ -2,9 +2,8 @@ import { describe, expect, it } from 'vitest'
 
 import {
   clearAuthCookie,
-  DEFAULT_NICKNAME,
   parseLoginInput,
-  parseSignupInput,
+  parsePasswordInput,
   setAuthCookie,
 } from './auth-api'
 
@@ -18,29 +17,22 @@ describe('email auth input', () => {
     })
   })
 
-  it('uses the default nickname for signup', () => {
-    const result = parseSignupInput({
-      email: 'user@example.com',
-      password: 'secret1',
-    })
-
-    expect(result.success && result.data.nickname).toBe(DEFAULT_NICKNAME)
-  })
-
-  it('rejects malformed email, short password, and empty nickname', () => {
+  it('rejects a malformed email and a short password', () => {
     expect(parseLoginInput({ email: 'invalid', password: 'secret1' }).success).toBe(
       false,
     )
     expect(
       parseLoginInput({ email: 'user@example.com', password: '12345' }).success,
     ).toBe(false)
-    expect(
-      parseSignupInput({
-        email: 'user@example.com',
-        password: 'secret1',
-        nickname: '   ',
-      }).success,
-    ).toBe(false)
+  })
+
+  it('accepts a site password of at least six characters', () => {
+    expect(parsePasswordInput({ password: 'secret1' })).toEqual({
+      success: true,
+      data: { password: 'secret1' },
+    })
+    expect(parsePasswordInput({ password: '12345' }).success).toBe(false)
+    expect(parsePasswordInput({ password: 123456 }).success).toBe(false)
   })
 })
 

@@ -38,22 +38,13 @@ export const openApiDocument = {
     "/api/auth/signup": {
       post: {
         tags: ["Auth"],
-        summary: "Sign up with email",
+        summary: "Closed: sign up with Google instead",
         description:
-          "Creates a Supabase account. If email confirmation is disabled, the response also starts an HttpOnly cookie session.",
+          "Always refuses. Creating an account from an email and a password alone would let anyone claim an address they cannot read; Supabase merges accounts that share an email, so the claimer would join the owner's account once the owner signs in with Google. Sign in with Google, then add a password through POST /api/auth/password.",
         operationId: "signupWithEmail",
-        requestBody: {
-          required: true,
-          content: jsonContent({ $ref: "#/components/schemas/SignupInput" }),
-        },
+        deprecated: true,
         responses: {
-          "201": successResponse("Account created", "AuthResponse"),
-          "400": errorResponse("Invalid input or signup rejected"),
-          "409": errorResponse(
-            "Email already registered. error.details.reason is google_only or already_registered",
-          ),
-          "429": errorResponse("Too many requests"),
-          "500": errorResponse("Signup processing failed"),
+          "403": errorResponse("Email signup is closed (reason: signup_closed)"),
         },
       },
     },
@@ -306,20 +297,6 @@ export const openApiDocument = {
         properties: {
           email: { type: "string", format: "email", example: "user@example.com" },
           password: { type: "string", format: "password", minLength: 6 },
-        },
-      },
-      SignupInput: {
-        type: "object",
-        required: ["email", "password"],
-        properties: {
-          email: { type: "string", format: "email", example: "user@example.com" },
-          password: { type: "string", format: "password", minLength: 6 },
-          nickname: {
-            type: "string",
-            minLength: 1,
-            maxLength: 20,
-            default: "Plant Explorer",
-          },
         },
       },
       SitePasswordInput: {

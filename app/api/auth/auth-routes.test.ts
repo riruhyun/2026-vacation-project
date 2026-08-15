@@ -88,33 +88,16 @@ describe('email auth routes', () => {
     })
   })
 
-  it('reports when signup requires email confirmation', async () => {
-    authMocks.signUp.mockResolvedValue({
-      data: {
-        user: { id: 'user-id', email: 'user@example.com' },
-        session: null,
-      },
-      error: null,
-    })
+  it('refuses email signup so an address cannot be claimed before its owner arrives', async () => {
+    const response = await signup()
 
-    const response = await signup(
-      jsonRequest('/api/auth/signup', {
-        email: 'user@example.com',
-        password: 'secret1',
-        nickname: '초록 수집가',
-      }),
-    )
-
-    expect(response.status).toBe(201)
-    expect(response.headers.get('set-cookie')).toBeNull()
-    expect(await response.json()).toMatchObject({
-      success: true,
-      data: {
-        authenticated: false,
-        emailConfirmationRequired: true,
-        accessToken: null,
-      },
-    })
+    expect(response.status).toBe(403)
+    const body = await response.json()
+    expect(body.error.details.reason).toBe('signup_closed')
+    expect(body.error.message).toContain('Google')
+    // 계정을 만드는 경로 자체가 없어야 합니다. 조회조차 하지 않습니다.
+    expect(authMocks.signUp).not.toHaveBeenCalled()
+    expect(authMocks.lookupAccount).not.toHaveBeenCalled()
   })
 
   it('guides a Google-only account to set a site password instead of failing the password check', async () => {
@@ -165,22 +148,6 @@ describe('email auth routes', () => {
 
     expect(response.status).toBe(401)
     expect((await response.json()).error.details.reason).toBe('not_registered')
-  })
-
-  it('blocks signing up with an email that already came in through Google', async () => {
-    authMocks.lookupAccount.mockResolvedValue(GOOGLE_ONLY)
-
-    const response = await signup(
-      jsonRequest('/api/auth/signup', {
-        email: 'user@example.com',
-        password: 'secret1',
-      }),
-    )
-
-    expect(response.status).toBe(409)
-    expect((await response.json()).error.details.reason).toBe('google_only')
-    // 중복 가입 요청이 Supabase까지 가지 않아야 합니다.
-    expect(authMocks.signUp).not.toHaveBeenCalled()
   })
 
   it('refuses to set a site password without a session', async () => {
