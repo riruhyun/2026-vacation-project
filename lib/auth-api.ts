@@ -4,6 +4,27 @@ import { NICKNAME_MAX_LENGTH } from '@/lib/profile-limits'
 export const AUTH_PASSWORD_MIN_LENGTH = 6
 export const DEFAULT_NICKNAME = '식물 탐험가'
 
+/**
+ * 로그인 화면이 어떤 안내를 띄울지 고르는 값입니다.
+ * 응답의 error.details.reason으로 내려가므로 문구가 바뀌어도 화면이 깨지지 않습니다.
+ */
+export type AuthFailureReason =
+  | 'google_only'
+  | 'not_registered'
+  | 'invalid_password'
+  | 'already_registered'
+  | 'email_not_confirmed'
+
+export const AUTH_MESSAGES = {
+  /** 구글로만 가입된 계정에 이메일/비밀번호로 들어오려는 경우입니다. */
+  googleOnly:
+    '이 계정은 Google로 가입되었습니다. 이메일/비밀번호를 사용하려면 사이트 전용 비밀번호를 먼저 설정해 주세요.',
+  notRegistered: '가입되지 않은 이메일입니다. Google로 시작해 주세요.',
+  invalidPassword: '비밀번호가 올바르지 않습니다.',
+  alreadyRegistered: '이미 가입된 이메일입니다. Google로 계속하기를 사용해 주세요.',
+  emailNotConfirmed: '이메일 확인이 필요합니다.',
+} as const
+
 type AuthInput = {
   email: string
   password: string
@@ -74,6 +95,25 @@ export function parseSignupInput(body: unknown): ParseResult<SignupInput> {
   }
 
   return { success: true, data: { ...credentials.data, nickname } }
+}
+
+/** 사이트 전용 비밀번호를 설정할 때 쓰는 본문입니다. 이미 로그인한 사용자만 부를 수 있습니다. */
+export function parsePasswordInput(body: unknown): ParseResult<{ password: string }> {
+  const input = objectBody(body)
+  if (!input) return { success: false, message: 'JSON 객체가 필요합니다.' }
+
+  if (typeof input.password !== 'string') {
+    return { success: false, message: 'password는 문자열이어야 합니다.' }
+  }
+
+  if (input.password.length < AUTH_PASSWORD_MIN_LENGTH) {
+    return {
+      success: false,
+      message: `password는 ${AUTH_PASSWORD_MIN_LENGTH}자 이상이어야 합니다.`,
+    }
+  }
+
+  return { success: true, data: { password: input.password } }
 }
 
 export function setAuthCookie(response: Response, token: string, maxAge: number) {

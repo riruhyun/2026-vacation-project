@@ -24,7 +24,11 @@ export const openApiDocument = {
   },
   servers: [{ url: "/", description: "현재 애플리케이션" }],
   tags: [
-    { name: "Auth", description: "Email signup, login, and logout" },
+    {
+      name: "Auth",
+      description:
+        "Google is the only sign-up path. Email/password is an optional extra key added after signing in.",
+    },
     { name: "System", description: "서버 상태 확인" },
     { name: "Plants", description: "식물 판별 및 상세 정보" },
     { name: "Collection", description: "사용자 관찰 기록과 수집 현황" },
@@ -45,6 +49,9 @@ export const openApiDocument = {
         responses: {
           "201": successResponse("Account created", "AuthResponse"),
           "400": errorResponse("Invalid input or signup rejected"),
+          "409": errorResponse(
+            "Email already registered. error.details.reason is google_only or already_registered",
+          ),
           "429": errorResponse("Too many requests"),
           "500": errorResponse("Signup processing failed"),
         },
@@ -64,10 +71,37 @@ export const openApiDocument = {
         responses: {
           "200": successResponse("Login completed", "AuthResponse"),
           "400": errorResponse("Invalid input"),
-          "401": errorResponse("Invalid email or password"),
+          "401": errorResponse(
+            "error.details.reason is not_registered or invalid_password",
+          ),
           "403": errorResponse("Email confirmation required"),
+          "409": errorResponse(
+            "Google-only account. A site password must be set first (reason: google_only)",
+          ),
           "429": errorResponse("Too many requests"),
           "500": errorResponse("Login processing failed"),
+        },
+      },
+    },
+    "/api/auth/password": {
+      post: {
+        tags: ["Auth"],
+        summary: "Set a site-only password",
+        description:
+          "Adds an email/password key to the signed-in account. Sign-up happens through Google only, so this is the single way to enable email login. Requires an existing session on purpose: allowing it beforehand would let anyone claim someone else's address.",
+        operationId: "setSitePassword",
+        security: userSecurity,
+        requestBody: {
+          required: true,
+          content: jsonContent({
+            $ref: "#/components/schemas/SitePasswordInput",
+          }),
+        },
+        responses: {
+          "200": successResponse("Password set", "SitePasswordResponse"),
+          "400": errorResponse("Invalid input"),
+          "401": errorResponse("Sign-in required"),
+          "500": errorResponse("Password update failed"),
         },
       },
     },
@@ -285,6 +319,25 @@ export const openApiDocument = {
             minLength: 1,
             maxLength: 20,
             default: "Plant Explorer",
+          },
+        },
+      },
+      SitePasswordInput: {
+        type: "object",
+        required: ["password"],
+        properties: {
+          password: { type: "string", format: "password", minLength: 6 },
+        },
+      },
+      SitePasswordResponse: {
+        type: "object",
+        required: ["success", "data"],
+        properties: {
+          success: { type: "boolean", enum: [true] },
+          data: {
+            type: "object",
+            required: ["hasSitePassword"],
+            properties: { hasSitePassword: { type: "boolean", enum: [true] } },
           },
         },
       },

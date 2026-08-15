@@ -137,10 +137,45 @@ console.log(saved.reward) // xp, totalXp, level, leveledUp, plantCount
 
 한 번이라도 저장하면 `profile.onboarded`가 `true`가 되고, 그 뒤로는 온보딩 화면으로 보내지 않습니다.
 
-## 이메일 인증 API
+## 인증
 
-- `POST /api/auth/signup`: `email`, `password`, 선택적 `nickname`으로 회원가입합니다. 이메일 확인 설정이 꺼져 있으면 즉시 로그인 쿠키도 발급합니다.
+**가입 입구는 구글 하나입니다.** 이메일과 비밀번호는 가입 수단이 아니라, 이미 로그인한 사용자가 나중에 추가하는 보조 열쇠입니다.
+
+```
+구글로 계속하기   →  가입이자 로그인
+이메일/비밀번호   →  사이트 전용 비밀번호를 설정한 사용자만
+```
+
+### 사이트 전용 비밀번호
+
+`POST /api/auth/password`로 설정합니다. **로그인한 상태에서만** 부를 수 있습니다.
+
+로그인 전에 만들 수 있게 하면, 남의 이메일 주소로 비밀번호를 선점해 두었다가 주인이 구글로 들어올 때 같은 계정으로 합쳐져 계정을 빼앗을 수 있습니다. Supabase는 이메일이 같으면 자동으로 계정을 합치기 때문입니다. "이미 본인임이 증명된 사람만 열쇠를 추가한다"는 규칙이 이를 막습니다.
+
+설정 여부는 `public.profiles.has_site_password`에 기록합니다 (`supabase/site-password-migration.sql`). `auth.users`에는 비밀번호 설정 여부를 알려주는 필드가 없어서 우리가 직접 관리합니다.
+
+### 로그인 실패 구분
+
+`POST /api/auth/login`이 실패하면 `error.details.reason`으로 이유를 구분합니다. 화면은 문구가 아니라 이 값으로 분기하면 됩니다.
+
+| reason | 상태 | 뜻과 안내 |
+| --- | ---: | --- |
+| `google_only` | 409 | 구글로만 가입한 계정입니다. 사이트 전용 비밀번호를 먼저 설정해야 합니다. **구글 로그인 버튼을 함께 띄우세요.** |
+| `invalid_password` | 401 | 비밀번호를 설정했지만 값이 틀렸습니다 |
+| `not_registered` | 401 | 가입 이력이 없습니다. 구글로 시작해야 합니다 |
+| `email_not_confirmed` | 403 | 이메일 확인이 필요합니다 |
+
+`POST /api/auth/signup`은 이미 가입된 이메일이면 409로 막습니다 (`google_only` 또는 `already_registered`). Supabase는 계정 목록을 캐내지 못하도록 중복 가입에도 성공한 것처럼 응답하는데, 그러면 구글로 가입한 사용자가 "가입은 됐다는데 로그인은 안 되는" 상태에 빠집니다.
+
+### 알려진 제약
+
+**비밀번호 분실 복구가 없습니다.** 구글 계정에 접근할 수 없고 사이트 전용 비밀번호도 설정하지 않은 사용자는 들어올 방법이 없습니다. 가입 시 예방을 권고하는 화면도 두지 않았습니다. 시연 범위 밖으로 의도적으로 둔 것이며, 필요해지면 Supabase의 비밀번호 재설정 메일을 붙이면 됩니다.
+
+### 엔드포인트
+
+- `POST /api/auth/signup`: `email`, `password`, 선택적 `nickname`으로 계정을 만듭니다. 이미 가입된 이메일은 409로 막습니다.
 - `POST /api/auth/login`: `email`, `password`로 로그인하고 `plant-access-token` HttpOnly 쿠키를 설정합니다.
+- `POST /api/auth/password`: 로그인한 사용자의 사이트 전용 비밀번호를 설정합니다.
 - `POST /api/auth/logout`: 현재 세션을 폐기하고 로그인 쿠키를 제거합니다.
 
 Swagger(`/api-docs`)에서는 `Auth`의 로그인 API를 한 번 실행한 뒤 보호 API를 실행하면 쿠키가 자동으로 함께 전송됩니다. 별도로 토큰을 복사할 필요가 없습니다. 외부 API 클라이언트는 로그인 응답의 `accessToken`을 `Authorization: Bearer <token>`으로 보낼 수도 있습니다.
