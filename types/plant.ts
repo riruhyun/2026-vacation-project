@@ -50,12 +50,12 @@ export interface PlantDetailScreenData {
   id?: PlantId;
   koreanName: string;
   scientificName: string;
-  description: string;
+  description: string | null;
   imageUrl: string | null;
   rarity: RarityCode | null;
   observationCount: number;
   firstObservedAt: string | null;
-  informationSource: string;
+  informationSource: string | null;
   informationSourceUrl?: string;
 }
 

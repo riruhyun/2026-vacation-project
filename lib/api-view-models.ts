@@ -6,8 +6,6 @@ import type {
 import type { ObservationDto } from "@/types/observation";
 import type { HomeData, ProfilePageData, ProfileResponse } from "@/types/user";
 
-const DEFAULT_DESCRIPTION = "도감 설명을 준비하고 있습니다.";
-
 function getLevelTitle(level: number) {
   if (level >= 5) return "숲 지킴이";
   if (level >= 3) return "숲 탐험가";
@@ -94,7 +92,7 @@ export function buildPlantDetailData(response: PlantDetailResponseDto): PlantDet
     id: response.plant.id,
     koreanName: response.plant.koreanName,
     scientificName: response.plant.scientificName,
-    description: response.plant.description ?? DEFAULT_DESCRIPTION,
+    description: response.plant.description,
     imageUrl: latestObservation?.imageUrl ?? null,
     rarity: response.plant.rarity,
     observationCount: response.userCollection.observationCount,
@@ -118,11 +116,11 @@ export function buildFindingDetailData(
     official: false as const,
     koreanName: target.displayName,
     scientificName: target.scientificName,
-    description: DEFAULT_DESCRIPTION,
+    description: null,
     imageUrl: target.representativeImageUrl || null,
     rarity: null,
     observationCount: target.observationCount,
     firstObservedAt: null,
-    informationSource: "산림청 국립수목원",
+    informationSource: null,
   };
 }
