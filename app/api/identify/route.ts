@@ -118,8 +118,7 @@ export async function POST(request: Request) {
     }).slice(0, 3);
     const forestPlants = await Promise.all(
       results.map(({ match, scientificName }) => {
-        if (!match) return null;
-        const request = match.card.representativePlantPilbkNo
+        const request = match?.card.representativePlantPilbkNo
           ? getForestPlantByNumber(match.card.representativePlantPilbkNo)
           : getForestPlant(scientificName);
         return request.catch(() => null);

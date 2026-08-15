@@ -31,6 +31,55 @@ function decodeKey(key: string) {
   }
 }
 
+function normalizedRank(value: string) {
+  switch (value.toLowerCase().replace(/\.$/, '')) {
+    case 'subsp':
+    case 'ssp':
+      return 'subsp'
+    case 'var':
+      return 'var'
+    case 'f':
+    case 'fo':
+    case 'forma':
+      return 'f'
+    default:
+      return null
+  }
+}
+
+function canonicalScientificName(value: string) {
+  const tokens = value
+    .replace(/×/g, ' × ')
+    .trim()
+    .split(/\s+/)
+
+  if (tokens.length < 2) return value.trim().toLowerCase()
+
+  const canonical = [tokens[0].toLowerCase()]
+  let index = 1
+
+  if (tokens[index] === '×') {
+    canonical.push('×')
+    index += 1
+  }
+
+  const species = tokens[index]?.replace(/[(),]/g, '').toLowerCase()
+  if (!species) return value.trim().toLowerCase()
+  canonical.push(species)
+
+  for (index += 1; index < tokens.length - 1; index += 1) {
+    const rank = normalizedRank(tokens[index])
+    if (!rank) continue
+
+    const epithet = tokens[index + 1].replace(/[(),]/g, '').toLowerCase()
+    if (!epithet) continue
+    canonical.push(rank, epithet)
+    index += 1
+  }
+
+  return canonical.join(' ')
+}
+
 async function request(path: string, params: Record<string, string>) {
   const key = process.env.FOREST_API_KEY
   if (!key) throw new Error('FOREST_API_KEY가 설정되지 않았습니다.')
@@ -58,17 +107,22 @@ export async function getForestPlant(
 ) {
   const searchXml = await request('plantPilbkSearch', {
     pageNo: '1',
-    numOfRows: '1',
+    numOfRows: '5',
     reqSearchWrd: scientificName,
   })
 
-  const item = searchXml.match(/<item>([\s\S]*?)<\/item>/)?.[1]
-  const expectedName = scientificName.toLowerCase()
-  const foundName = item && value(item, 'plantSpecsScnm')?.toLowerCase()
-  const exact =
-    foundName === expectedName || foundName?.startsWith(`${expectedName} `)
+  const expectedName = canonicalScientificName(scientificName)
+  const items = [...searchXml.matchAll(/<item>([\s\S]*?)<\/item>/g)].map(
+    (match) => match[1],
+  )
+  const item = items.find((candidate) => {
+    const foundName = value(candidate, 'plantSpecsScnm')
+    return foundName
+      ? canonicalScientificName(foundName) === expectedName
+      : false
+  })
 
-  if (!item || !exact) return null
+  if (!item) return null
 
   const plantNumber = item && value(item, 'plantPilbkNo')
 
