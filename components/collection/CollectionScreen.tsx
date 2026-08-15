@@ -28,7 +28,7 @@ export default function CollectionScreen({ data }: { data: CollectionResponseDto
 
       <div className="grid grid-cols-2 gap-2" role="tablist" aria-label="도감 분류">
         {([
-          ["official", "공식 도감 50종"],
+          ["official", `공식 도감 ${data.summary.total}종`],
           ["other", "기타 발견"],
         ] as const).map(([value, label]) => (
           <button
