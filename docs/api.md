@@ -139,11 +139,36 @@ console.log(saved.reward) // xp, totalXp, level, leveledUp, plantCount
 
 ## 인증
 
-**가입 입구는 구글 하나입니다.** 이메일과 비밀번호는 가입 수단이 아니라, 이미 로그인한 사용자가 나중에 추가하는 보조 열쇠입니다.
+가입 방식은 두 가지입니다.
 
 ```
-구글로 계속하기   →  가입이자 로그인
-이메일/비밀번호   →  사이트 전용 비밀번호를 설정한 사용자만
+구글로 계속하기        →  가입이자 로그인. 실제 메일 주소를 씁니다
+아이디 + 비밀번호       →  메일 주소를 쓰지 않는 가입
+```
+
+### 아이디는 메일 주소가 될 수 없습니다
+
+아이디 회원가입은 **`@`가 들어간 값을 거부합니다.** 저장할 때는 예약 도메인을 붙입니다.
+
+```
+sooji_01  →  sooji_01@id.plantdex.invalid
+```
+
+`.invalid`는 RFC 2606이 예약한 최상위 도메인이라 누구도 등록할 수 없습니다. 즉 이 주소는 실제 메일 주소가 될 수 없고, 구글 계정의 주소와 **절대 같아지지 않습니다.**
+
+이게 선점 공격을 막는 방식입니다. 일반 가입을 열어두면 남의 지메일 주소로 먼저 계정을 만들어 두었다가, 주인이 구글로 들어올 때 Supabase가 같은 이메일이라며 두 계정을 합쳐 버립니다. 그러면 선점한 사람이 자기가 정한 비밀번호로 남의 도감에 들어갑니다. 주소가 겹칠 수 없으면 합쳐질 일도 없습니다.
+
+아이디 규칙은 영문 소문자, 숫자, 밑줄 3~20자입니다 (`lib/auth-api.ts`).
+
+계정은 admin API로 `email_confirm: true`와 함께 만듭니다. 보낼 수 없는 주소이므로 **확인 메일을 시도조차 하지 않고**, 가입과 동시에 로그인됩니다. 인증 번호를 받을 일이 없습니다.
+
+### 로그인 본문
+
+`id`와 `email` 중 **하나만** 보냅니다.
+
+```json
+{ "id": "sooji_01", "password": "..." }        // 아이디로 가입한 계정
+{ "email": "user@gmail.com", "password": "..." } // 구글 계정 + 사이트 전용 비밀번호
 ```
 
 ### 사이트 전용 비밀번호
@@ -161,17 +186,13 @@ console.log(saved.reward) // xp, totalXp, level, leveledUp, plantCount
 | reason | 상태 | 뜻과 안내 |
 | --- | ---: | --- |
 | `google_only` | 409 | 구글로만 가입한 계정입니다. 사이트 전용 비밀번호를 먼저 설정해야 합니다. **구글 로그인 버튼을 함께 띄우세요.** |
-| `invalid_password` | 401 | 비밀번호를 설정했지만 값이 틀렸습니다 |
-| `not_registered` | 401 | 가입 이력이 없습니다. 구글로 시작해야 합니다 |
+| `invalid_password` | 401 | 비밀번호가 틀렸습니다. 아이디 계정은 항상 이쪽입니다 |
+| `not_registered` | 401 | 가입 이력이 없습니다 |
 | `email_not_confirmed` | 403 | 이메일 확인이 필요합니다 |
 
-### 이메일 회원가입은 받지 않습니다
+아이디로 가입한 계정에는 **`google_only`를 띄우지 않습니다.** 처음부터 비밀번호가 있는 계정이라 구글 안내가 맞지 않습니다. 서버가 저장된 주소의 도메인을 보고 구분합니다.
 
-`POST /api/auth/signup`은 항상 403 `signup_closed`를 돌려줍니다.
-
-이메일과 비밀번호만으로 계정을 만들 수 있으면, 메일함 주인임을 증명하지 않고도 남의 주소를 선점할 수 있습니다. Supabase는 이메일이 같은 계정을 자동으로 합치므로, 주인이 나중에 구글로 들어오는 순간 선점한 사람이 그 계정에 함께 들어갑니다. 구글은 이 증명을 구글이 대신 해주기 때문에 같은 문제가 없습니다.
-
-라우트를 삭제하지 않고 남겨둔 것은 예전 클라이언트가 404 대신 이유를 받도록 하기 위해서입니다.
+`POST /api/auth/signup`은 이미 쓰는 아이디면 409 `id_taken`으로 막습니다.
 
 ### 알려진 제약
 
@@ -179,8 +200,8 @@ console.log(saved.reward) // xp, totalXp, level, leveledUp, plantCount
 
 ### 엔드포인트
 
-- `POST /api/auth/signup`: 받지 않습니다. 항상 403 `signup_closed`입니다.
-- `POST /api/auth/login`: `email`, `password`로 로그인하고 `plant-access-token` HttpOnly 쿠키를 설정합니다.
+- `POST /api/auth/signup`: `id`, `password`, 선택적 `nickname`으로 가입하고 바로 로그인합니다. 이메일 주소는 거부합니다.
+- `POST /api/auth/login`: `id` 또는 `email`과 `password`로 로그인하고 `plant-access-token` HttpOnly 쿠키를 설정합니다.
 - `POST /api/auth/password`: 로그인한 사용자의 사이트 전용 비밀번호를 설정합니다.
 - `POST /api/auth/logout`: 현재 세션을 폐기하고 로그인 쿠키를 제거합니다.
 

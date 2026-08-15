@@ -1,6 +1,8 @@
 import {
   AUTH_MESSAGES,
   type AuthFailureReason,
+  emailToLocalId,
+  isLocalIdEmail,
   parseLoginInput,
   setAuthCookie,
 } from '@/lib/auth-api'
@@ -20,11 +22,18 @@ function refuse(message: string, reason: AuthFailureReason, status: number) {
  * "애초에 비밀번호를 만든 적이 없는 것"은 사용자에게 전혀 다른 상황입니다.
  * 후자에게 "비밀번호가 올바르지 않습니다"를 보여주면 영영 들어올 수 없습니다.
  */
-async function explainFailure(email: string) {
+async function explainFailure(email: string, byLocalId: boolean) {
   const account = await lookupAccount(email)
 
   if (!account.exists) {
-    return refuse(AUTH_MESSAGES.notRegistered, 'not_registered', 401)
+    return byLocalId
+      ? refuse(AUTH_MESSAGES.notRegistered, 'not_registered', 401)
+      : refuse(AUTH_MESSAGES.notRegisteredEmail, 'not_registered', 401)
+  }
+
+  // 아이디 계정은 처음부터 비밀번호가 있으므로 구글 안내를 띄우면 안 됩니다.
+  if (account.isLocalId) {
+    return refuse(AUTH_MESSAGES.invalidPassword, 'invalid_password', 401)
   }
 
   if (!account.hasSitePassword) {
@@ -47,10 +56,13 @@ export async function POST(request: Request) {
   const input = parseLoginInput(body)
   if (!input.success) return fail(input.message)
 
+  const { email, password, byLocalId } = input.data
+
   try {
-    const { data, error } = await createPublicAuthClient().auth.signInWithPassword(
-      input.data,
-    )
+    const { data, error } = await createPublicAuthClient().auth.signInWithPassword({
+      email,
+      password,
+    })
 
     if (error?.code === 'email_not_confirmed') {
       return refuse(AUTH_MESSAGES.emailNotConfirmed, 'email_not_confirmed', 403)
@@ -62,14 +74,20 @@ export async function POST(request: Request) {
     }
 
     if (error || !data.user || !data.session) {
-      return explainFailure(input.data.email)
+      return explainFailure(email, byLocalId)
     }
+
+    // 아이디 계정은 저장된 .invalid 주소 대신 사용자가 입력한 아이디를 돌려줍니다.
+    const account = data.user.email ?? email
 
     return setAuthCookie(
       ok({
-        user: { id: data.user.id, email: data.user.email ?? input.data.email },
+        user: {
+          id: data.user.id,
+          account: emailToLocalId(account),
+          isLocalId: isLocalIdEmail(account),
+        },
         authenticated: true,
-        emailConfirmationRequired: false,
         accessToken: data.session.access_token,
         expiresAt: data.session.expires_at ?? null,
       }),

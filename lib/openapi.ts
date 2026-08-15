@@ -27,7 +27,7 @@ export const openApiDocument = {
     {
       name: "Auth",
       description:
-        "Google is the only sign-up path. Email/password is an optional extra key added after signing in.",
+        "Two ways in: Google, or an id and password. Ids can never look like email addresses, so the two never collide.",
     },
     { name: "System", description: "서버 상태 확인" },
     { name: "Plants", description: "식물 판별 및 상세 정보" },
@@ -38,13 +38,19 @@ export const openApiDocument = {
     "/api/auth/signup": {
       post: {
         tags: ["Auth"],
-        summary: "Closed: sign up with Google instead",
+        summary: "Sign up with an id",
         description:
-          "Always refuses. Creating an account from an email and a password alone would let anyone claim an address they cannot read; Supabase merges accounts that share an email, so the claimer would join the owner's account once the owner signs in with Google. Sign in with Google, then add a password through POST /api/auth/password.",
-        operationId: "signupWithEmail",
-        deprecated: true,
+          "Creates an account from an id and a password. Email addresses are refused: an id is stored under a reserved .invalid domain, so it can never equal a real Gmail address and Supabase can never merge it into someone's Google account. That is what stops an address from being claimed before its owner arrives. No confirmation mail is sent, and the response starts a session right away.",
+        operationId: "signupWithId",
+        requestBody: {
+          required: true,
+          content: jsonContent({ $ref: "#/components/schemas/SignupInput" }),
+        },
         responses: {
-          "403": errorResponse("Email signup is closed (reason: signup_closed)"),
+          "201": successResponse("Account created and signed in", "AuthResponse"),
+          "400": errorResponse("Invalid id or password, or an email was supplied"),
+          "409": errorResponse("Id already taken (reason: id_taken)"),
+          "500": errorResponse("Signup processing failed"),
         },
       },
     },
@@ -293,10 +299,41 @@ export const openApiDocument = {
     schemas: {
       LoginInput: {
         type: "object",
-        required: ["email", "password"],
+        required: ["password"],
+        description:
+          "Send exactly one of id or email. Use id for an account created here, and email for a Google account that has added a site password.",
         properties: {
+          id: {
+            type: "string",
+            minLength: 3,
+            maxLength: 20,
+            pattern: "^[a-z0-9_]+$",
+            example: "sooji_01",
+          },
           email: { type: "string", format: "email", example: "user@example.com" },
           password: { type: "string", format: "password", minLength: 6 },
+        },
+      },
+      SignupInput: {
+        type: "object",
+        required: ["id", "password"],
+        description:
+          "An email address is refused here. Sign up with Google to use one.",
+        properties: {
+          id: {
+            type: "string",
+            minLength: 3,
+            maxLength: 20,
+            pattern: "^[a-z0-9_]+$",
+            description: "Lowercase letters, digits and underscore. No @ and no dot.",
+            example: "sooji_01",
+          },
+          password: { type: "string", format: "password", minLength: 6 },
+          nickname: {
+            type: "string",
+            maxLength: 20,
+            description: "Defaults to the id.",
+          },
         },
       },
       SitePasswordInput: {
@@ -325,24 +362,23 @@ export const openApiDocument = {
           success: { type: "boolean", enum: [true] },
           data: {
             type: "object",
-            required: [
-              "user",
-              "authenticated",
-              "emailConfirmationRequired",
-              "accessToken",
-              "expiresAt",
-            ],
+            required: ["user", "authenticated", "accessToken", "expiresAt"],
             properties: {
               user: {
                 type: "object",
-                required: ["id", "email"],
+                required: ["id", "account", "isLocalId"],
                 properties: {
                   id: { type: "string", format: "uuid" },
-                  email: { type: "string", format: "email" },
+                  account: {
+                    type: "string",
+                    description:
+                      "The id for an account created here, the email address for a Google account.",
+                    example: "sooji_01",
+                  },
+                  isLocalId: { type: "boolean" },
                 },
               },
               authenticated: { type: "boolean" },
-              emailConfirmationRequired: { type: "boolean" },
               accessToken: { type: "string", nullable: true },
               expiresAt: { type: "integer", nullable: true },
             },

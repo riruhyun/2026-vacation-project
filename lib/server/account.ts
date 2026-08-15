@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { isLocalIdEmail } from '@/lib/auth-api'
 import { supabase } from './supabase'
 
 /** 로그인 화면이 어떤 안내를 띄울지 정하는 데 필요한 계정 상태입니다. */
@@ -9,12 +10,15 @@ export type AccountLookup = {
   googleLinked: boolean
   /** 사이트 전용 비밀번호를 설정했으면 true입니다. false면 구글로만 들어올 수 있습니다. */
   hasSitePassword: boolean
+  /** 아이디로 가입한 계정입니다. 구글 안내를 띄우면 안 됩니다. */
+  isLocalId: boolean
 }
 
 const UNKNOWN: AccountLookup = {
   exists: false,
   googleLinked: false,
   hasSitePassword: false,
+  isLocalId: false,
 }
 
 type AdminUser = {
@@ -75,6 +79,7 @@ export async function lookupAccount(email: string): Promise<AccountLookup> {
     exists: true,
     googleLinked: providers.includes('google'),
     hasSitePassword: Boolean(data?.has_site_password),
+    isLocalId: isLocalIdEmail(user.email),
   }
 }
 
