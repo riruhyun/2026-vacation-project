@@ -1,7 +1,18 @@
+import { redirect } from "next/navigation";
 import CollectionScreen from "@/components/collection/CollectionScreen";
-import { getCollectionData } from "@/lib/data";
+import { ApiError, getCollection } from "@/lib/api";
+
+export const dynamic = "force-dynamic";
 
 export default async function CollectionPage() {
-  const data = await getCollectionData();
-  return <CollectionScreen data={data} />;
+  try {
+    const data = await getCollection();
+    return <CollectionScreen data={data} />;
+  } catch (error) {
+    if (error instanceof ApiError && error.isUnauthorized) {
+      redirect("/login");
+    }
+
+    throw error;
+  }
 }
