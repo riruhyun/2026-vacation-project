@@ -40,12 +40,12 @@ as $$
 declare
   current_level integer := 1;
   remaining_xp integer := greatest(total_xp, 0);
-  required_xp integer := 400;
+  required_xp integer := 100;
 begin
   while remaining_xp >= required_xp loop
     remaining_xp := remaining_xp - required_xp;
     current_level := current_level + 1;
-    required_xp := 400 + (current_level - 1) * 50;
+    required_xp := 100 + (current_level - 1) * 50;
   end loop;
 
   return current_level;
