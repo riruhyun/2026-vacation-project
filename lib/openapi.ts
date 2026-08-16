@@ -12,7 +12,7 @@ const errorResponse = (description: string) => ({
   content: jsonContent({ $ref: "#/components/schemas/ApiFailure" }),
 });
 
-const userIdSecurity = [{ UserId: [] }] as const;
+const sessionSecurity = [{ SessionCookie: [] }] as const;
 
 export const openApiDocument = {
   openapi: "3.0.3",
@@ -25,6 +25,7 @@ export const openApiDocument = {
   servers: [{ url: "/", description: "현재 애플리케이션" }],
   tags: [
     { name: "System", description: "서버 상태 확인" },
+    { name: "Auth", description: "회원가입과 로그인" },
     { name: "Plants", description: "식물 판별 및 상세 정보" },
     { name: "Collection", description: "사용자 관찰 기록과 수집 현황" },
     { name: "Profile", description: "사용자 프로필과 진행도" },
@@ -42,16 +43,141 @@ export const openApiDocument = {
         },
       },
     },
+    "/api/auth/sign-up": {
+      post: {
+        tags: ["Auth"],
+        summary: "회원가입",
+        description:
+          "닉네임, 이메일, 비밀번호를 한 번에 받습니다. 닉네임은 대소문자를 무시하고 중복될 수 없습니다.",
+        operationId: "signUp",
+        requestBody: {
+          required: true,
+          content: jsonContent({
+            type: "object",
+            required: ["nickname", "email", "password"],
+            properties: {
+              nickname: {
+                type: "string",
+                minLength: 2,
+                maxLength: 16,
+                example: "초록탐험가",
+              },
+              email: { type: "string", format: "email" },
+              password: { type: "string", minLength: 6, format: "password" },
+            },
+          }),
+        },
+        responses: {
+          "200": successResponse("가입 완료. 세션 쿠키가 설정됩니다.", "EmptyResponse"),
+          "400": errorResponse("입력값이 올바르지 않음"),
+          "409": errorResponse("닉네임 중복 또는 이메일 확인 설정 필요"),
+        },
+      },
+    },
+    "/api/auth/sign-in": {
+      post: {
+        tags: ["Auth"],
+        summary: "로그인",
+        operationId: "signIn",
+        requestBody: {
+          required: true,
+          content: jsonContent({
+            type: "object",
+            required: ["email", "password"],
+            properties: {
+              email: { type: "string", format: "email" },
+              password: { type: "string", format: "password" },
+            },
+          }),
+        },
+        responses: {
+          "200": successResponse("로그인 완료. 세션 쿠키가 설정됩니다.", "EmptyResponse"),
+          "400": errorResponse("이메일 또는 비밀번호가 올바르지 않음"),
+        },
+      },
+    },
+    "/api/auth/sign-out": {
+      post: {
+        tags: ["Auth"],
+        summary: "로그아웃",
+        operationId: "signOut",
+        security: sessionSecurity,
+        responses: {
+          "200": successResponse("로그아웃 완료. 세션 쿠키가 삭제됩니다.", "EmptyResponse"),
+        },
+      },
+    },
     "/api/profile": {
       get: {
         tags: ["Profile"],
         summary: "프로필과 진행도 조회",
         operationId: "getProfile",
-        security: userIdSecurity,
+        security: sessionSecurity,
         responses: {
           "200": successResponse("프로필과 수집 통계", "ProfileResponse"),
-          "401": errorResponse("유효한 사용자 ID가 없음"),
+          "401": errorResponse("로그인이 필요함"),
           "500": errorResponse("프로필 조회 실패"),
+        },
+      },
+      patch: {
+        tags: ["Profile"],
+        summary: "닉네임과 프로필 사진 수정",
+        description:
+          "두 항목 모두 선택입니다. 보낸 것만 반영하며, 아무것도 보내지 않으면 400을 돌려줍니다.",
+        operationId: "updateProfile",
+        security: sessionSecurity,
+        requestBody: {
+          required: true,
+          content: {
+            "multipart/form-data": {
+              schema: {
+                type: "object",
+                properties: {
+                  nickname: {
+                    type: "string",
+                    minLength: 2,
+                    maxLength: 16,
+                    description: "앞뒤 공백은 제거되고 연속 공백은 하나로 줄어듭니다.",
+                  },
+                  avatar: {
+                    type: "string",
+                    format: "binary",
+                    description: "6MB 이하 JPG 또는 PNG 이미지",
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          "200": successResponse("수정된 닉네임과 사진 주소", "UpdateProfileResponse"),
+          "400": errorResponse("변경할 내용이 없거나 입력값이 올바르지 않음"),
+          "401": errorResponse("로그인이 필요함"),
+          "404": errorResponse("프로필을 찾을 수 없음"),
+          "409": errorResponse("이미 사용 중인 닉네임"),
+          "500": errorResponse("프로필 수정 실패"),
+        },
+      },
+    },
+    "/api/activities": {
+      get: {
+        tags: ["Profile"],
+        summary: "최근 활동 조회",
+        operationId: "getActivities",
+        security: sessionSecurity,
+        parameters: [
+          {
+            name: "limit",
+            in: "query",
+            required: false,
+            description: "가져올 활동 개수",
+            schema: { type: "integer", minimum: 1, default: 3 },
+          },
+        ],
+        responses: {
+          "200": successResponse("최근 활동 목록", "ActivitiesResponse"),
+          "401": errorResponse("로그인이 필요함"),
+          "500": errorResponse("활동 기록 조회 실패"),
         },
       },
     },
@@ -60,10 +186,10 @@ export const openApiDocument = {
         tags: ["Collection"],
         summary: "식물 수집 현황 조회",
         operationId: "getCollection",
-        security: userIdSecurity,
+        security: sessionSecurity,
         responses: {
           "200": successResponse("수집 현황", "CollectionResponse"),
-          "401": errorResponse("유효한 사용자 ID가 없음"),
+          "401": errorResponse("로그인이 필요함"),
           "500": errorResponse("수집 현황 조회 실패"),
         },
       },
@@ -75,7 +201,7 @@ export const openApiDocument = {
         description:
           "사용자 ID를 함께 보내면 해당 사용자의 관찰 기록도 반환합니다.",
         operationId: "getPlant",
-        security: [{}, { UserId: [] }],
+        security: [{}, { SessionCookie: [] }],
         parameters: [
           {
             name: "id",
@@ -141,7 +267,7 @@ export const openApiDocument = {
         description:
           "식물 사진을 저장하고 발견 횟수, 경험치 및 레벨을 갱신합니다. 파일 크기는 최대 6MB입니다.",
         operationId: "createObservation",
-        security: userIdSecurity,
+        security: sessionSecurity,
         requestBody: {
           required: true,
           content: {
@@ -180,7 +306,7 @@ export const openApiDocument = {
         responses: {
           "201": successResponse("저장된 관찰 기록과 보상", "ObservationResponse"),
           "400": errorResponse("잘못된 이미지 또는 식물 정보"),
-          "401": errorResponse("유효한 사용자 ID가 없음"),
+          "401": errorResponse("로그인이 필요함"),
           "404": errorResponse("공식 식물을 찾을 수 없음"),
           "500": errorResponse("관찰 기록 저장 실패"),
         },
@@ -189,11 +315,12 @@ export const openApiDocument = {
   },
   components: {
     securitySchemes: {
-      UserId: {
+      SessionCookie: {
         type: "apiKey",
-        in: "header",
-        name: "x-user-id",
-        description: "Supabase 사용자 UUID",
+        in: "cookie",
+        name: "sb-access-token",
+        description:
+          "로그인 시 설정되는 Supabase Auth 세션 쿠키입니다. 브라우저가 자동으로 함께 보냅니다.",
       },
     },
     schemas: {
@@ -251,11 +378,91 @@ export const openApiDocument = {
           },
         },
       },
+      EmptyResponse: {
+        type: "object",
+        required: ["success", "data"],
+        properties: {
+          success: { type: "boolean", enum: [true] },
+          data: { type: "object" },
+        },
+      },
+      UpdateProfileResponse: {
+        type: "object",
+        required: ["success", "data"],
+        properties: {
+          success: { type: "boolean", enum: [true] },
+          data: {
+            type: "object",
+            required: ["profile"],
+            properties: {
+              profile: {
+                type: "object",
+                required: ["nickname", "avatarUrl"],
+                properties: {
+                  nickname: { type: "string", example: "초록탐험가" },
+                  avatarUrl: { type: "string", nullable: true, format: "uri" },
+                },
+              },
+            },
+          },
+        },
+      },
+      ActivitiesResponse: {
+        type: "object",
+        required: ["success", "data"],
+        properties: {
+          success: { type: "boolean", enum: [true] },
+          data: {
+            type: "object",
+            required: ["activities"],
+            properties: {
+              activities: {
+                type: "array",
+                items: { $ref: "#/components/schemas/Activity" },
+              },
+            },
+          },
+        },
+      },
+      Activity: {
+        type: "object",
+        required: [
+          "id",
+          "type",
+          "collectionCardId",
+          "scientificName",
+          "displayName",
+          "level",
+          "createdAt",
+        ],
+        properties: {
+          id: { type: "string", format: "uuid" },
+          type: { type: "string", enum: ["new_plant", "level_up"] },
+          collectionCardId: { type: "integer", nullable: true, minimum: 1 },
+          scientificName: { type: "string", nullable: true },
+          displayName: { type: "string", nullable: true },
+          level: { type: "integer", nullable: true, minimum: 1 },
+          createdAt: { type: "string", format: "date-time" },
+        },
+      },
       Profile: {
         type: "object",
-        required: ["nickname", "xp", "level", "currentLevelXp", "xpToNextLevel"],
+        required: [
+          "nickname",
+          "avatarUrl",
+          "xp",
+          "level",
+          "currentLevelXp",
+          "xpToNextLevel",
+        ],
         properties: {
           nickname: { type: "string", nullable: true, example: "초록탐험가" },
+          avatarUrl: {
+            type: "string",
+            nullable: true,
+            format: "uri",
+            description: "설정 전이면 null입니다.",
+          },
           xp: { type: "integer", minimum: 0, example: 425 },
           level: { type: "integer", minimum: 1, example: 3 },
           currentLevelXp: { type: "integer", minimum: 0, example: 175 },

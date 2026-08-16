@@ -2,7 +2,12 @@
 
 import Button from "@/components/ui/Button";
 
+const fieldClassName =
+  "h-14 w-full rounded-[var(--radius-control)] border border-[var(--color-border)] bg-[var(--color-surface)] px-[18px] text-sm text-[var(--color-text)] outline-none placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary)]";
+
 type LoginScreenProps = {
+  nickname: string;
+  setNickname: (value: string) => void;
   email: string;
   setEmail: (value: string) => void;
   password: string;
@@ -15,6 +20,8 @@ type LoginScreenProps = {
 };
 
 export default function LoginScreen({
+  nickname,
+  setNickname,
   email,
   setEmail,
   password,
@@ -25,6 +32,8 @@ export default function LoginScreen({
   errorMessage,
   isSubmitting,
 }: LoginScreenProps) {
+  const isSignUp = mode === "sign-up";
+
   return (
     <div className="flex min-h-dvh flex-col bg-[var(--color-background)] px-6 pb-7 pt-[76px]">
       <section className="mb-11">
@@ -39,6 +48,21 @@ export default function LoginScreen({
       </section>
 
       <section className="flex flex-col gap-3.5">
+        {isSignUp ? (
+          <>
+            <label htmlFor="login-nickname" className="sr-only">닉네임</label>
+            <input
+              id="login-nickname"
+              type="text"
+              value={nickname}
+              onChange={(event) => setNickname(event.target.value)}
+              placeholder="닉네임"
+              autoComplete="nickname"
+              maxLength={16}
+              className={fieldClassName}
+            />
+          </>
+        ) : null}
         <label htmlFor="login-email" className="sr-only">이메일 주소</label>
         <input
           id="login-email"
@@ -47,7 +71,7 @@ export default function LoginScreen({
           onChange={(event) => setEmail(event.target.value)}
           placeholder="이메일 주소"
           autoComplete="email"
-          className="h-14 w-full rounded-[var(--radius-control)] border border-[var(--color-border)] bg-[var(--color-surface)] px-[18px] text-sm text-[var(--color-text)] outline-none placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary)]"
+          className={fieldClassName}
         />
         <label htmlFor="login-password" className="sr-only">비밀번호</label>
         <input
@@ -56,11 +80,11 @@ export default function LoginScreen({
           value={password}
           onChange={(event) => setPassword(event.target.value)}
           placeholder="비밀번호"
-          autoComplete="current-password"
-          className="h-14 w-full rounded-[var(--radius-control)] border border-[var(--color-border)] bg-[var(--color-surface)] px-[18px] text-sm text-[var(--color-text)] outline-none placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary)]"
+          autoComplete={isSignUp ? "new-password" : "current-password"}
+          className={fieldClassName}
         />
         <Button type="button" variant="primary" fullWidth onClick={onSubmit} disabled={isSubmitting}>
-          {isSubmitting ? "처리 중..." : mode === "sign-in" ? "이메일로 로그인" : "이메일로 회원가입"}
+          {isSubmitting ? "처리 중..." : isSignUp ? "이메일로 회원가입" : "이메일로 로그인"}
         </Button>
         {errorMessage ? <p role="alert" className="text-sm text-red-700">{errorMessage}</p> : null}
       </section>
@@ -80,7 +104,7 @@ export default function LoginScreen({
         onClick={onToggleMode}
         className="mt-7 text-center text-sm text-[var(--color-text-muted)]"
       >
-        {mode === "sign-in" ? "회원가입" : "로그인으로 돌아가기"}
+        {isSignUp ? "로그인으로 돌아가기" : "회원가입"}
       </button>
 
       <div className="mt-auto rounded-[var(--radius-card)] bg-[var(--color-info-surface)] px-[18px] py-5">

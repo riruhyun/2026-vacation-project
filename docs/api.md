@@ -21,6 +21,14 @@
 
 기존 Supabase 프로젝트에는 SQL Editor에서 `supabase/progress-migration.sql`을 한 번 실행해야 합니다. 새 프로젝트는 `supabase/schema.sql`을 실행합니다.
 
+## 인증
+
+Supabase Auth 세션 쿠키를 사용합니다. `/api/auth/sign-in`이나 `/api/auth/sign-up`이 성공하면 쿠키가 설정되고, 이후 요청에는 브라우저가 자동으로 함께 보냅니다. 프론트에서 따로 헤더를 붙일 일은 없습니다.
+
+서버에서는 `lib/server/user.ts`의 `userIdFromSession()`이 세션에서 사용자 UUID를 꺼냅니다. 세션이 없으면 각 API가 401을 돌려줍니다.
+
+아래 표에서 "인증 필요"로 표시된 엔드포인트가 이 세션을 요구합니다.
+
 ## 경험치와 레벨
 
 경험치 규칙은 전부 `lib/progress.ts`에 있습니다. 기본 경험치에 조건별 보너스를 더하는 구조입니다.
@@ -78,13 +86,38 @@ console.log(saved.result) // new 또는 duplicate
 console.log(saved.reward) // xp, totalXp, level, leveledUp, plantCount
 ```
 
-인증 연결 전 사용자 구분은 `x-user-id` 헤더를 사용합니다. `lib/api.ts`에서는 다음 한 줄로 설정합니다.
+## 인증 API
 
-```ts
-import { setUserId } from '@/lib/api'
+### POST /api/auth/sign-up
 
-setUserId('Supabase Auth 사용자 UUID')
+닉네임, 이메일, 비밀번호를 **한 요청에 함께** 보냅니다. 화면에서 세 칸을 다 채운 뒤 한 번만 호출하면 됩니다.
+
+```json
+{ "nickname": "초록탐험가", "email": "me@example.com", "password": "비밀번호" }
 ```
+
+닉네임 규칙은 `lib/nickname.ts`에 있습니다.
+
+| 규칙 | 내용 |
+| --- | --- |
+| 길이 | 2자 이상 16자 이하 |
+| 공백 | 앞뒤 공백은 제거하고, 사이의 연속 공백은 하나로 줄임 |
+| 중복 | **대소문자를 무시하고 중복 불가.** 사칭을 막기 위해서입니다 |
+| 제어 문자 | 줄바꿈 등은 사용 불가 |
+
+중복된 닉네임이면 409와 함께 `이미 사용 중인 닉네임이에요.`를 돌려줍니다. 마지막 방어선은 `profiles(lower(nickname))` 고유 인덱스라, 동시에 같은 이름으로 가입해도 한 명만 성공합니다.
+
+닉네임은 `auth.users`의 메타데이터로 넘어가고, `handle_new_user` 트리거가 `profiles`에 씁니다. 서버가 `profiles`에 따로 insert하지 않습니다.
+
+### POST /api/auth/sign-in
+
+```json
+{ "email": "me@example.com", "password": "비밀번호" }
+```
+
+### POST /api/auth/sign-out
+
+본문 없이 호출하면 세션 쿠키를 지웁니다.
 
 ## POST /api/identify
 
@@ -100,7 +133,7 @@ setUserId('Supabase Auth 사용자 UUID')
 
 ## POST /api/observations
 
-`x-user-id`와 `multipart/form-data`가 필요합니다.
+로그인과 `multipart/form-data`가 필요합니다.
 
 | 필드 | 필수 | 설명 |
 | --- | --- | --- |
@@ -135,11 +168,46 @@ setUserId('Supabase Auth 사용자 UUID')
 }
 ```
 
+## PATCH /api/profile
+
+닉네임과 프로필 사진을 바꿉니다. 별도 엔드포인트를 만들지 않고 프로필 하나로 처리합니다.
+
+`multipart/form-data`로 보내며 **둘 다 선택 항목**입니다. 보낸 것만 반영하고, 아무것도 안 보내면 400입니다.
+
+| 필드 | 필수 | 설명 |
+| --- | --- | --- |
+| `nickname` | X | 위 닉네임 규칙과 동일 |
+| `avatar` | X | 6MB 이하 JPG 또는 PNG |
+
+```ts
+import { updateProfile } from '@/lib/api'
+
+await updateProfile({ nickname: '초록탐험가' })
+await updateProfile({ avatar: file })
+await updateProfile({ nickname: '초록탐험가', avatar: file })
+```
+
+```json
+{
+  "success": true,
+  "data": {
+    "profile": {
+      "nickname": "초록탐험가",
+      "avatarUrl": "https://<프로젝트>.supabase.co/storage/v1/object/public/avatars/<userId>/<uuid>.jpg"
+    }
+  }
+}
+```
+
+프로필 사진 파일은 전용 `avatars` 버킷에 `{userId}/{uuid}.jpg` 형태로 저장하고, `profiles.avatar_path` 열에는 그 경로만 넣습니다. 새 테이블은 없습니다. 사진을 바꾸면 이전 파일은 지워집니다.
+
+기존 Supabase 프로젝트는 `supabase/profile-identity-migration.sql`을 한 번 실행하세요. 이미 중복된 닉네임이 있으면 먼저 만들어진 계정이 이름을 지키고, 나중 계정에만 id 앞 8자리가 붙습니다.
+
 ## 조회 API
 
-- `GET /api/collection`: 공식 50종의 수집 여부와 식물별 발견 횟수, 기타 발견 목록
-- `GET /api/plants/:id`: 로컬 공식 목록과 산림청 설명, 해당 사용자의 관찰 기록
-- `GET /api/profile`: 닉네임, 누적 XP, 레벨, 현재 레벨 XP, 다음 레벨 요구 XP, 수집 통계
+- `GET /api/collection`: 공식 50종의 수집 여부와 식물별 발견 횟수, 기타 발견 목록 (인증 필요)
+- `GET /api/plants/:id`: 로컬 공식 목록과 산림청 설명, 해당 사용자의 관찰 기록 (인증 필요)
+- `GET /api/profile`: 닉네임, 프로필 사진 주소, 누적 XP, 레벨, 현재 레벨 XP, 다음 레벨 요구 XP, 수집 통계 (인증 필요)
+- `GET /api/activities`: 최근 활동 기록. `?limit=`으로 개수를 정하며 기본 3, 최대 20 (인증 필요)
 - `GET /api/health`: 환경변수 설정 여부 확인. 외부 API 요청은 보내지 않음
-
-사용자별 API는 `x-user-id`가 필요합니다. 실제 로그인 연결 시 `lib/server/user.ts`와 `lib/api.ts`의 사용자 헤더 부분만 Supabase Auth 세션으로 교체하면 됩니다.
+- `GET /api/openapi`: OpenAPI 3.0.3 문서. 정의는 `lib/openapi.ts`에 있습니다

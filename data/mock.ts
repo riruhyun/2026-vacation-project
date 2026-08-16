@@ -69,6 +69,7 @@ export const MOCK_OBSERVATIONS: readonly ObservationDto[] = [
 export const MOCK_PROFILE: ProfileResponse = {
   profile: {
     nickname: "식물 탐험가",
+    avatarUrl: null,
     xp: 220,
     level: 2,
     currentLevelXp: 120,

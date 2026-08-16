@@ -61,23 +61,34 @@ try {
 
 ### 사용자 구분
 
-로그인 연동 전에는 `x-user-id` 헤더(UUID)로 사용자를 구분한다. 해당 값은 `lib/api.ts`에서 설정한다.
+Supabase Auth 세션 쿠키를 사용한다. `/api/auth/sign-in` 또는 `/api/auth/sign-up`이 성공하면 쿠키가 설정되고, 이후 요청에는 브라우저가 자동으로 함께 보낸다. 화면에서 헤더를 붙일 일은 없다.
 
-```ts
-import { setUserId } from '@/lib/api'
-setUserId('Supabase Auth 사용자 UUID')
-```
+서버는 `lib/server/user.ts`의 `userIdFromSession()`으로 세션에서 사용자 UUID를 꺼낸다. 세션이 없으면 401이다.
 
-| API | 사용자 헤더 |
+| API | 로그인 |
 | --- | --- |
 | `POST /api/identify` | 필요 없음 |
 | `GET /api/health` | 필요 없음 |
+| `POST /api/auth/sign-up` · `sign-in` | 필요 없음 |
 | `GET /api/plants/:id` | 선택 — 없으면 `userCollection`이 빈 상태로 반환됨 |
 | `POST /api/observations` | **필수** (없으면 401) |
 | `GET /api/collection` | **필수** (없으면 401) |
-| `GET /api/profile` | **필수** (없으면 401) |
+| `GET /api/profile` · `PATCH /api/profile` | **필수** (없으면 401) |
+| `GET /api/activities` | **필수** (없으면 401) |
 
-헤더가 없으면 서버는 `DEV_USER_ID` 환경변수를 사용한다. UUID 형식이 아닌 값은 무시한다. (`lib/server/user.ts`)
+### 회원가입
+
+닉네임, 이메일, 비밀번호를 **한 요청에 함께** 보낸다. 화면에서 세 칸을 다 채운 뒤 한 번만 호출한다.
+
+```ts
+await fetch('/api/auth/sign-up', {
+  method: 'POST',
+  headers: { 'content-type': 'application/json' },
+  body: JSON.stringify({ nickname, email, password }),
+})
+```
+
+닉네임은 2~16자이고 **대소문자를 무시하고 중복될 수 없다.** 사칭을 막기 위해서이며, 중복이면 409와 함께 `이미 사용 중인 닉네임이에요.`를 돌려준다. 앞뒤 공백은 제거되고 사이의 연속 공백은 하나로 줄어든다. 규칙은 `lib/nickname.ts`에 있다.
 
 ### 이미지 제약
 
@@ -210,7 +221,7 @@ Pl@ntNet 호출에는 타임아웃이 없다. 외부 응답이 지연되면 API 
 
 사용자가 선택한 식물을 사진과 함께 저장하고 경험치를 계산한다. 성공 상태는 **201**이다.
 
-**요청** — `multipart/form-data` + `x-user-id`
+**요청** — `multipart/form-data` (로그인 필요)
 
 | 필드 | 필수 | 설명 |
 | --- | --- | --- |
@@ -295,7 +306,7 @@ XP는 서버가 계산하고, Supabase 함수 `record_collection_observation_rew
 
 ### GET /api/collection
 
-공식 50종 전체와 기타 발견 목록을 반환한다. `x-user-id`는 필수이다.
+공식 50종 전체와 기타 발견 목록을 반환한다. 로그인이 필요하다.
 
 **실제 응답** (일부)
 
@@ -351,7 +362,7 @@ XP는 서버가 계산하고, Supabase 함수 `record_collection_observation_rew
 
 ### GET /api/plants/:id
 
-식물 상세정보와 사용자 관찰 기록을 반환한다. `x-user-id`는 선택 사항이다.
+식물 상세정보와 사용자 관찰 기록을 반환한다. 로그인은 선택 사항이다.
 
 **실제 응답** (`/api/plants/1`, 사용자 헤더 있음)
 
@@ -400,7 +411,7 @@ XP는 서버가 계산하고, Supabase 함수 `record_collection_observation_rew
 
 ### GET /api/profile
 
-닉네임, 경험치, 관찰 통계를 반환한다. `x-user-id`는 필수이다.
+닉네임, 프로필 사진 주소, 경험치, 관찰 통계를 반환한다. 로그인이 필요하다.
 
 **실제 응답**
 
@@ -409,10 +420,11 @@ XP는 서버가 계산하고, Supabase 함수 `record_collection_observation_rew
   "success": true,
   "data": {
     "profile": {
-      "nickname": "식물 탐험가",
-      "xp": 125,
+      "nickname": "초록탐험가",
+      "avatarUrl": null,
+      "xp": 210,
       "level": 2,
-      "currentLevelXp": 25,
+      "currentLevelXp": 110,
       "xpToNextLevel": 150
     },
     "stats": {
@@ -429,6 +441,7 @@ XP는 서버가 계산하고, Supabase 함수 `record_collection_observation_rew
 | 필드 | 타입 | 의미 |
 | --- | --- | --- |
 | `profile.nickname` | `string \| null` | 프로필 행이 없으면 `null` → 화면에서 기본값 처리 |
+| `profile.avatarUrl` | `string \| null` | 프로필 사진 주소. 설정 전이면 `null` → 기본 아이콘 표시 |
 | `profile.xp` | `number` | 누적 XP |
 | `profile.level` | `number` | 현재 레벨 |
 | `profile.currentLevelXp` | `number` | 이번 레벨에서 모은 XP |
@@ -439,7 +452,80 @@ XP는 서버가 계산하고, Supabase 함수 `record_collection_observation_rew
 | `stats.completionRate` | `number` | 0~100 정수 |
 | `stats.lastObservedAt` | `string \| null` | 마지막 관찰 시각. 기록이 없으면 `null` |
 
-위 예시는 질경이 첫 발견, 닭의장풀 첫 발견, 닭의장풀 재발견 보상을 합산한 `50 + 50 + 25 = 125`이다.
+위 예시는 질경이(흔함) 첫 발견, 닭의장풀(흔함) 첫 발견, 닭의장풀 재관찰 보상을 합산한 `100 + 100 + 10 = 210`이다.
+
+**오류**: 401 · 500
+
+### PATCH /api/profile
+
+닉네임과 프로필 사진을 바꾼다. 별도 엔드포인트를 만들지 않고 프로필 하나로 처리한다.
+
+**요청** — `multipart/form-data` (로그인 필요). **두 필드 모두 선택**이며 보낸 것만 반영된다. 아무것도 안 보내면 400이다.
+
+| 필드 | 필수 | 설명 |
+| --- | --- | --- |
+| `nickname` | X | 2~16자. 중복 불가 |
+| `avatar` | X | JPG 또는 PNG, 6MB 이하 |
+
+```ts
+import { updateProfile } from '@/lib/api'
+
+await updateProfile({ nickname: '초록탐험가' })
+await updateProfile({ avatar: file })
+await updateProfile({ nickname: '초록탐험가', avatar: file })
+```
+
+**응답 구조 예시**
+
+```json
+{
+  "success": true,
+  "data": {
+    "profile": {
+      "nickname": "초록탐험가",
+      "avatarUrl": "https://<프로젝트>.supabase.co/storage/v1/object/public/avatars/<userId>/<uuid>.jpg"
+    }
+  }
+}
+```
+
+프로필 사진은 전용 `avatars` 버킷에 `{userId}/{uuid}.jpg` 형태로 저장된다. 사진을 바꾸면 이전 파일은 삭제된다.
+
+**오류**: 400(변경할 내용 없음·형식 위반) · 401 · 404(프로필 없음) · **409(닉네임 중복)** · 500
+
+### GET /api/activities
+
+최근 활동 기록을 최신순으로 반환한다. 로그인이 필요하다.
+
+**요청** — 쿼리 `limit`. 1~20 사이 정수이며 기본값과 잘못된 값의 대체값은 모두 3이다.
+
+**응답 구조 예시**
+
+```json
+{
+  "success": true,
+  "data": {
+    "activities": [
+      {
+        "id": "0f0c…",
+        "type": "new_plant",
+        "collectionCardId": 1,
+        "scientificName": "Plantago asiatica",
+        "displayName": "질경이",
+        "level": null,
+        "createdAt": "2026-08-16T10:02:11.000Z"
+      }
+    ]
+  }
+}
+```
+
+| 필드 | 타입 | 의미 |
+| --- | --- | --- |
+| `type` | `"new_plant" \| "level_up"` | 활동 종류 |
+| `collectionCardId` | `number \| null` | `new_plant`이고 공식 종일 때만 값이 있음 |
+| `scientificName` · `displayName` | `string \| null` | `level_up`이면 `null` |
+| `level` | `number \| null` | `level_up`일 때 달성 레벨. 그 외엔 `null` |
 
 **오류**: 401 · 500
 
@@ -548,7 +634,7 @@ RARITY_LABEL[plant.rarity] // "흔함" | "보통" | "드묾"
 1. **`/api/plants/:id`는 산림청 API 실패 시 전체 요청에 500을 반환한다.** `getForestPlant` 호출이 별도로 처리되지 않으므로 산림청 장애 또는 `FOREST_API_KEY` 누락 시 식물 상세정보를 조회할 수 없다. `/api/identify`는 같은 상황에서 `description: null`을 반환한다. 상세 화면에 재시도 기능이 필요하다.
 2. **Pl@ntNet 호출에는 타임아웃이 없다.** 산림청 호출에는 `AbortSignal.timeout(10000)`이 적용되어 있으나 `app/api/identify/route.ts`의 `fetch`에는 타임아웃이 없다. 외부 응답이 지연되면 화면이 계속 로딩될 수 있으므로 자체 타임아웃 또는 취소 기능이 필요하다. 네트워크 연결 실패는 502가 아닌 500으로 반환된다.
 3. **500 응답의 `error.details`에 내부 오류가 포함된다.** Supabase 오류가 브라우저까지 전달될 수 있으므로 사용자 화면에는 `error.message`만 표시하고 `details`는 노출하지 않는다.
-4. **`x-user-id`는 인증 수단이 아니다.** UUID를 아는 사용자가 다른 사용자의 데이터를 조회하거나 기록할 수 있는 임시 방식이다. 실제 로그인 연동 시 `lib/server/user.ts`와 `lib/api.ts`를 교체해야 한다.
+4. **프로필 사진 버킷도 공개이다.** `avatars` 버킷은 관찰 사진 버킷과 마찬가지로 공개 설정이라 URL을 아는 사람은 누구나 볼 수 있다. 비공개가 필요하면 6번과 함께 서명 URL로 전환해야 한다.
 
 ### 데이터와 표시 주의사항
 
@@ -579,9 +665,12 @@ RARITY_LABEL[plant.rarity] // "흔함" | "보통" | "드묾"
 ```bash
 curl -s http://localhost:3000/api/health
 curl -s http://localhost:3000/api/plants/1
-curl -s -H "x-user-id: <사용자 UUID>" http://localhost:3000/api/collection
-curl -s -H "x-user-id: <사용자 UUID>" http://localhost:3000/api/profile
+curl -s -c 쿠키.txt -X POST http://localhost:3000/api/auth/sign-in \
+  -H "content-type: application/json" \
+  -d '{"email":"me@example.com","password":"비밀번호"}'
+curl -s -b 쿠키.txt http://localhost:3000/api/collection
+curl -s -b 쿠키.txt http://localhost:3000/api/profile
 curl -s -X POST http://localhost:3000/api/identify -F "image=@사진.jpg;type=image/jpeg"
 ```
 
-새 Supabase 프로젝트는 `supabase/schema.sql`을 실행한다. 기존 프로젝트는 `supabase/progress-migration.sql`을 SQL Editor에서 한 번 실행한다.
+새 Supabase 프로젝트는 `supabase/schema.sql`을 실행한다. 기존 프로젝트는 SQL Editor에서 `supabase/progress-migration.sql`, `supabase/xp-rebalance-migration.sql`, `supabase/profile-identity-migration.sql`을 한 번씩 실행한다.

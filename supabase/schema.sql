@@ -2,12 +2,18 @@ create extension if not exists pgcrypto;
 
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
-  nickname text not null default '식물 탐험가',
+  nickname text not null,
+  -- 프로필 사진. avatars 버킷 안의 경로입니다.
+  avatar_path text,
   xp integer not null default 0 check (xp >= 0),
   level integer not null default 1 check (level >= 1),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- 사칭을 막기 위해 닉네임은 대소문자를 무시하고 고유해야 합니다.
+create unique index if not exists profiles_nickname_unique_idx
+  on public.profiles (lower(nickname));
 
 create table if not exists public.observations (
   id uuid primary key default gen_random_uuid(),
@@ -150,7 +156,11 @@ begin
   insert into public.profiles (id, nickname)
   values (
     new.id,
-    coalesce(new.raw_user_meta_data ->> 'nickname', '식물 탐험가')
+    coalesce(
+      nullif(btrim(new.raw_user_meta_data ->> 'nickname'), ''),
+      -- 앱 밖에서 만든 계정용 대비값. 고유 인덱스에 걸리지 않습니다.
+      '탐험가-' || left(new.id::text, 8)
+    )
   )
   on conflict (id) do nothing;
   return new;
@@ -184,6 +194,25 @@ insert into storage.buckets (
 values (
   'observations',
   'observations',
+  true,
+  6291456,
+  array['image/jpeg', 'image/png']
+)
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+insert into storage.buckets (
+  id,
+  name,
+  public,
+  file_size_limit,
+  allowed_mime_types
+)
+values (
+  'avatars',
+  'avatars',
   true,
   6291456,
   array['image/jpeg', 'image/png']
