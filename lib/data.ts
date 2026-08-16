@@ -239,19 +239,6 @@ export async function getFindingDetail(
   };
 }
 
-export async function searchPlants(query: string): Promise<CollectionPlantDto[]> {
-  const normalizedQuery = query.trim().toLowerCase();
-  const { officialPlants } = await getCollectionData();
-
-  if (!normalizedQuery) return officialPlants;
-
-  return officialPlants.filter(
-    (plant) =>
-      plant.koreanName.toLowerCase().includes(normalizedQuery) ||
-      plant.scientificName.toLowerCase().includes(normalizedQuery),
-  );
-}
-
 export async function getMockIdentifyResult(
   organ: PlantOrgan,
 ): Promise<IdentifyResponseDto> {

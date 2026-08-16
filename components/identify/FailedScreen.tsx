@@ -56,17 +56,9 @@ export function FailedScreen() {
         ))}
       </div>
 
-      <div className="mt-auto space-y-2 pt-8">
+      <div className="mt-auto pt-8">
         <Button type="button" fullWidth onClick={() => router.push("/capture")}>
           사진 추가해서 다시 분석
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          fullWidth
-          onClick={() => router.push("/search?mode=identify")}
-        >
-          직접 이름 검색하기
         </Button>
       </div>
     </div>
