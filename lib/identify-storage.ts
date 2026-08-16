@@ -1,4 +1,5 @@
 import { PLANT_ORGANS, type PlantOrgan } from "@/types/domain";
+import type { XpEvent } from "@/lib/progress";
 import type {
   IdentifyCandidateDto,
   IdentifyResponseDto,
@@ -89,6 +90,17 @@ function isIdentifyResponse(value: unknown): value is IdentifyResponseDto {
   );
 }
 
+function isXpEvent(value: unknown): value is XpEvent {
+  if (!value || typeof value !== "object") return false;
+
+  const event = value as Record<string, unknown>;
+  return (
+    typeof event.type === "string" &&
+    typeof event.label === "string" &&
+    typeof event.xp === "number"
+  );
+}
+
 function isObservationResult(value: unknown): value is StoredIdentifyResult {
   if (!value || typeof value !== "object") return false;
 
@@ -108,8 +120,12 @@ function isObservationResult(value: unknown): value is StoredIdentifyResult {
     typeof observation.observedAt === "string" &&
     (!("imageUrl" in observation) || typeof observation.imageUrl === "string") &&
     typeof reward.xp === "number" &&
+    Array.isArray(reward.breakdown) &&
+    reward.breakdown.every(isXpEvent) &&
     typeof reward.totalXp === "number" &&
     typeof reward.level === "number" &&
+    typeof reward.currentLevelXp === "number" &&
+    typeof reward.xpToNextLevel === "number" &&
     typeof reward.leveledUp === "boolean" &&
     typeof reward.plantCount === "number"
   );
