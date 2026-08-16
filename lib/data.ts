@@ -25,7 +25,12 @@ import type {
   PlantDetailScreenData,
 } from "@/types/plant";
 import type { HomeData, ProfilePageData } from "@/types/user";
-import { levelProgress, observationXp } from "@/lib/progress";
+import {
+  levelProgress,
+  observationXpEvents,
+  STAGE_RARITY,
+  sumXp,
+} from "@/lib/progress";
 
 const DEFAULT_DESCRIPTION = "도감 설명을 준비하고 있습니다.";
 const DEFAULT_INFORMATION_SOURCE = "산림청 국립수목원";
@@ -258,7 +263,16 @@ export async function getMockObservationResult(
     groups.get(selection.scientificName.toLowerCase())?.observations.length ?? 0;
   const result = previousCount > 0 ? "duplicate" : "new";
   const observation = MOCK_OBSERVATION_TEMPLATES[result];
-  const xp = observationXp(selection.official ? selection.stage : null, previousCount);
+  const rarity = selection.official
+    ? selection.rarity ?? (selection.stage ? STAGE_RARITY[selection.stage] : null)
+    : null;
+  // 목업에는 촬영 시각이 없어 같은 날 재촬영 규칙은 적용하지 않습니다.
+  const breakdown = observationXpEvents({
+    rarity,
+    firstDiscovery: previousCount === 0,
+    sameDayRepeat: false,
+  });
+  const xp = sumXp(breakdown);
   const totalXp = MOCK_PROFILE.profile.xp + xp;
   const progress = levelProgress(totalXp);
 
@@ -272,8 +286,11 @@ export async function getMockObservationResult(
     },
     reward: {
       xp,
+      breakdown,
       totalXp,
       level: progress.level,
+      currentLevelXp: progress.currentXp,
+      xpToNextLevel: progress.xpToNextLevel,
       leveledUp: progress.level > MOCK_PROFILE.profile.level,
       plantCount: previousCount + 1,
     },

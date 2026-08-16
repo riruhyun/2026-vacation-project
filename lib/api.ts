@@ -12,7 +12,11 @@ import type {
   CollectionResponseDto,
   PlantDetailResponseDto,
 } from '@/types/plant'
-import type { ProfileResponse } from '@/types/user'
+import type {
+  ProfileResponse,
+  UpdateProfileInput,
+  UpdateProfileResponse,
+} from '@/types/user'
 import type { ActivitiesResponseDto } from '@/types/activity'
 
 /**
@@ -157,6 +161,18 @@ export function getPlant(plantId: number) {
 /** 닉네임, 누적 경험치, 관찰 통계를 가져옵니다. */
 export function getProfile() {
   return request<ProfileResponse>('/api/profile')
+}
+
+/** 닉네임이나 프로필 사진을 바꿉니다. 보낸 항목만 반영됩니다. */
+export function updateProfile(input: UpdateProfileInput) {
+  const form = new FormData()
+  if (input.nickname !== undefined) form.append('nickname', input.nickname)
+  if (input.avatar) form.append('avatar', input.avatar)
+
+  return request<UpdateProfileResponse>('/api/profile', {
+    method: 'PATCH',
+    body: form,
+  })
 }
 
 export function getActivities(limit = 3) {

@@ -2,7 +2,12 @@ import { errorMessage, fail, ok } from '@/lib/server/http'
 import { imageError, imageExtension, imageUrl } from '@/lib/server/image'
 import { toObservationDto } from '@/lib/server/observation'
 import { getCollectionCardById } from '@/lib/server/collection-cards'
-import { BASE_XP_BY_STAGE, levelProgress } from '@/lib/progress'
+import {
+  levelProgress,
+  observationXpEvents,
+  sumXp,
+  xpDayStartIso,
+} from '@/lib/progress'
 import { supabase } from '@/lib/server/supabase'
 import { userIdFromSession } from '@/lib/server/user'
 
@@ -21,6 +26,74 @@ type RewardRow = {
 function text(form: FormData, key: string) {
   const value = form.get(key)
   return typeof value === 'string' ? value.trim() : ''
+}
+
+/** 같은 날(한국 시간) 같은 종을 이미 기록했는지 확인합니다. */
+async function isSameDayRepeat(
+  userId: string,
+  collectionCardId: number | null,
+  scientificName: string,
+) {
+  const { data, error } = await supabase
+    .from('observations')
+    .select('id,scientific_name')
+    .eq('user_id', userId)
+    .gte('observed_at', xpDayStartIso())
+
+  if (error) throw error
+
+  const todayObservations = (data || []) as Array<{
+    id: string
+    scientific_name: string
+  }>
+  if (todayObservations.length === 0) return false
+
+  if (collectionCardId === null) {
+    const target = scientificName.toLowerCase()
+    return todayObservations.some(
+      (item) => item.scientific_name.toLowerCase() === target,
+    )
+  }
+
+  const { data: matches, error: matchError } = await supabase
+    .from('observation_collection_matches')
+    .select('observation_id')
+    .eq('collection_card_id', collectionCardId)
+    .in(
+      'observation_id',
+      todayObservations.map((item) => item.id),
+    )
+
+  if (matchError) throw matchError
+  return (matches || []).length > 0
+}
+
+/** 이 종을 처음 기록하는 관찰인지 확인합니다. */
+async function isFirstDiscovery(
+  userId: string,
+  collectionCardId: number | null,
+  scientificName: string,
+) {
+  if (collectionCardId === null) {
+    const { count, error } = await supabase
+      .from('observations')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('scientific_name', scientificName)
+
+    if (error) throw error
+    return (count || 0) === 0
+  }
+
+  const { data, error } = await supabase
+    .from('user_collection_counts')
+    .select('count')
+    .eq('user_id', userId)
+    .eq('collection_card_id', collectionCardId)
+    .maybeSingle()
+
+  if (error) throw error
+  return ((data as { count: number } | null)?.count || 0) === 0
 }
 
 export async function POST(request: Request) {
@@ -91,6 +164,27 @@ export async function POST(request: Request) {
       return fail('기타 식물은 displayName이 필요합니다.')
     }
 
+    // XP는 서버에서만 계산하고, Supabase 함수에는 확정된 값만 넘깁니다.
+    const [sameDayRepeat, firstDiscovery] = await Promise.all([
+      isSameDayRepeat(
+        userId,
+        collectionCard?.id ?? null,
+        submittedScientificName,
+      ),
+      isFirstDiscovery(
+        userId,
+        collectionCard?.id ?? null,
+        submittedScientificName,
+      ),
+    ])
+
+    const xpBreakdown = observationXpEvents({
+      rarity: collectionCard?.rarity ?? null,
+      firstDiscovery,
+      sameDayRepeat,
+    })
+    const xpAwarded = sumXp(xpBreakdown)
+
     const path = `${userId}/${crypto.randomUUID()}.${imageExtension(image)}`
     const { error: uploadError } = await supabase.storage
       .from('observations')
@@ -112,9 +206,8 @@ export async function POST(request: Request) {
         p_image_path: path,
         p_identification_score: identificationScore,
         p_candidates: candidates,
-        p_base_xp: collectionCard
-          ? BASE_XP_BY_STAGE[collectionCard.stage]
-          : 0,
+        // 함수는 이 값을 가공하지 않고 그대로 적립합니다.
+        p_base_xp: xpAwarded,
       },
     )
 
@@ -129,6 +222,7 @@ export async function POST(request: Request) {
       throw new Error('관찰 보상 결과가 없습니다.')
     }
 
+    const progress = levelProgress(reward.total_xp)
     const previousLevel = levelProgress(
       reward.total_xp - reward.xp_awarded,
     ).level
@@ -150,8 +244,11 @@ export async function POST(request: Request) {
         ),
         reward: {
           xp: reward.xp_awarded,
+          breakdown: xpBreakdown,
           totalXp: reward.total_xp,
           level: reward.user_level,
+          currentLevelXp: progress.currentXp,
+          xpToNextLevel: progress.xpToNextLevel,
           leveledUp: reward.user_level > previousLevel,
           plantCount: reward.collection_count,
         },

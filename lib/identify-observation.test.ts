@@ -32,10 +32,17 @@ const SAVED_RESULT: CreateObservationResponseDto = {
     observedAt: "2026-08-14T00:00:00.000Z",
   },
   reward: {
-    xp: 50,
-    totalXp: 50,
-    level: 1,
-    leveledUp: false,
+    xp: 100,
+    breakdown: [
+      { type: "observation", label: "관찰", xp: 10 },
+      { type: "first_discovery", label: "첫 발견", xp: 90 },
+      { type: "rarity_common", label: "흔함 희귀도", xp: 0 },
+    ],
+    totalXp: 100,
+    level: 2,
+    currentLevelXp: 0,
+    xpToNextLevel: 150,
+    leveledUp: true,
     plantCount: 1,
   },
 };

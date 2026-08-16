@@ -10,6 +10,63 @@ interface IdentifyResultScreenProps {
   response: CreateObservationResponseDto;
 }
 
+function XpBreakdown({ response }: IdentifyResultScreenProps) {
+  const { breakdown, xp } = response.reward;
+  // 흔함 희귀도처럼 0 XP인 사유는 굳이 보여주지 않습니다.
+  const visibleEvents = breakdown.filter((event) => event.xp > 0);
+
+  if (xp === 0) {
+    return (
+      <div className="mt-6 rounded-[var(--radius-control)] bg-[var(--color-info-surface)] px-5 py-4 text-center">
+        <strong className="text-xl text-[var(--color-primary)]">+0 XP</strong>
+        <p className="mt-1 text-xs text-[var(--color-text-muted)]">
+          오늘 이미 기록한 식물이라 경험치는 내일 다시 쌓여요.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-6 rounded-[var(--radius-control)] bg-[var(--color-info-surface)] px-5 py-4">
+      <ul className="flex flex-col gap-1 text-sm text-[var(--color-text-muted)]">
+        {visibleEvents.map((event) => (
+          <li key={event.type} className="flex justify-between">
+            <span>{event.label}</span>
+            <span>+{event.xp} XP</span>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-3 border-t border-[var(--color-border)] pt-3 text-center">
+        <strong className="text-xl text-[var(--color-primary)]">+{xp} XP</strong>
+      </p>
+    </div>
+  );
+}
+
+function LevelProgress({ response }: IdentifyResultScreenProps) {
+  const { level, currentLevelXp, xpToNextLevel } = response.reward;
+  const percent = xpToNextLevel
+    ? Math.min(Math.round((currentLevelXp / xpToNextLevel) * 100), 100)
+    : 0;
+
+  return (
+    <div className="mt-4">
+      <div className="flex items-baseline justify-between text-sm">
+        <strong className="text-[var(--color-primary-strong)]">Lv.{level}</strong>
+        <span className="text-[var(--color-text-muted)]">
+          {currentLevelXp} / {xpToNextLevel} XP
+        </span>
+      </div>
+      <div className="mt-2 h-2 overflow-hidden rounded-full bg-[var(--color-placeholder)]">
+        <div
+          className="h-full rounded-full bg-[var(--color-primary)]"
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
 function NewPlantContent({ response }: IdentifyResultScreenProps) {
   return (
     <>
@@ -22,14 +79,8 @@ function NewPlantContent({ response }: IdentifyResultScreenProps) {
       <p className="mt-2 text-sm italic text-[var(--color-text-muted)]">
         {response.observation.scientificName}
       </p>
-      <div className="mt-6 rounded-[var(--radius-control)] bg-[var(--color-info-surface)] px-5 py-4 text-center">
-        <strong className="text-xl text-[var(--color-primary)]">
-          +{response.reward.xp} XP
-        </strong>
-        <p className="mt-1 text-xs text-[var(--color-text-muted)]">
-          첫 관찰 기록이 준비됐어요.
-        </p>
-      </div>
+      <XpBreakdown response={response} />
+      <LevelProgress response={response} />
     </>
   );
 }
@@ -46,14 +97,8 @@ function DuplicatePlantContent({ response }: IdentifyResultScreenProps) {
       <p className="mt-2 text-sm text-[var(--color-text-muted)]">
         이번 기록은 {response.reward.plantCount}번째 관찰이에요.
       </p>
-      <div className="mt-6 rounded-[var(--radius-control)] bg-[var(--color-info-surface)] px-5 py-4 text-center">
-        <strong className="text-xl text-[var(--color-primary)]">
-          +{response.reward.xp} XP
-        </strong>
-        <p className="mt-1 text-xs text-[var(--color-text-muted)]">
-          같은 식물의 새 관찰 기록이 준비됐어요.
-        </p>
-      </div>
+      <XpBreakdown response={response} />
+      <LevelProgress response={response} />
     </>
   );
 }
