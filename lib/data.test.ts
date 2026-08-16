@@ -167,7 +167,7 @@ describe("mock data access", () => {
     });
   });
 
-  it("matches backend rewards for new official plants by stage", async () => {
+  it("matches backend rewards for new official plants by rarity", async () => {
     const baseCandidate = (await getMockIdentifyResult("auto")).candidates[0];
     const candidates = ([2, 17, 30] as const).map((id) => {
       const plant = OFFICIAL_PLANTS.find((item) => item.id === id)!;
@@ -184,34 +184,60 @@ describe("mock data access", () => {
     });
 
     await expect(getMockObservationResult(candidates[0])).resolves.toMatchObject({
-      reward: { xp: 50 },
+      reward: { xp: 100 },
     });
     await expect(getMockObservationResult(candidates[1])).resolves.toMatchObject({
-      reward: { xp: 90 },
+      reward: { xp: 125 },
     });
     await expect(getMockObservationResult(candidates[2])).resolves.toMatchObject({
-      reward: { xp: 140 },
+      reward: { xp: 150 },
     });
   });
 
-  it("reduces duplicate rewards using the existing observation count", async () => {
+  it("breaks the first discovery reward down by reason", async () => {
+    const plant = OFFICIAL_PLANTS.find((item) => item.id === 17)!;
+
+    await expect(getMockObservationResult({
+      plantId: plant.id,
+      official: true,
+      koreanName: plant.koreanName,
+      scientificName: plant.scientificName,
+      stage: plant.stage,
+      rarity: plant.rarity,
+    })).resolves.toMatchObject({
+      reward: {
+        xp: 125,
+        breakdown: [
+          { type: "observation", xp: 10 },
+          { type: "first_discovery", xp: 90 },
+          { type: "rarity_uncommon", xp: 25 },
+        ],
+      },
+    });
+  });
+
+  it("awards only the base observation XP when the species is already collected", async () => {
     const candidate = (await getMockIdentifyResult("leaf")).candidates.find(
       ({ plantId }) => plantId === 1,
     )!;
 
     await expect(getMockObservationResult(candidate)).resolves.toMatchObject({
       result: "duplicate",
-      reward: { xp: 13, plantCount: 3 },
+      reward: {
+        xp: 10,
+        breakdown: [{ type: "observation", label: "재관찰", xp: 10 }],
+        plantCount: 3,
+      },
     });
   });
 
-  it("awards no XP for nonofficial plants", async () => {
+  it("awards only the base observation XP for nonofficial plants", async () => {
     const candidate = (await getMockIdentifyResult("flower")).candidates.find(
       ({ official }) => !official,
     )!;
 
     await expect(getMockObservationResult(candidate)).resolves.toMatchObject({
-      reward: { xp: 0 },
+      reward: { xp: 10 },
     });
   });
 });

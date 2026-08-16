@@ -243,11 +243,18 @@ Pl@ntNet 호출에는 타임아웃이 없다. 외부 응답이 지연되면 API 
       "observedAt": "2026-08-10T17:23:41.856582+00:00"
     },
     "reward": {
-      "xp": 25,
-      "totalXp": 125,
-      "level": 1,
-      "leveledUp": false,
-      "plantCount": 2
+      "xp": 125,
+      "breakdown": [
+        { "type": "observation", "label": "관찰", "xp": 10 },
+        { "type": "first_discovery", "label": "첫 발견", "xp": 90 },
+        { "type": "rarity_uncommon", "label": "보통 희귀도", "xp": 25 }
+      ],
+      "totalXp": 345,
+      "level": 3,
+      "currentLevelXp": 95,
+      "xpToNextLevel": 200,
+      "leveledUp": true,
+      "plantCount": 1
     }
   }
 }
@@ -262,13 +269,27 @@ Pl@ntNet 호출에는 타임아웃이 없다. 외부 응답이 지연되면 API 
 | `observation.imagePath` | `string` | Storage 내부 경로. 화면 표시에는 사용하지 않음 |
 | `observation.imageUrl` | `string` | 바로 `<Image src>`에 넣을 수 있는 공개 URL |
 | `observation.observedAt` | `string` | ISO 8601 |
-| `reward.xp` | `number` | 이번에 받은 XP. 기타 식물은 `0` |
+| `reward.xp` | `number` | 이번에 받은 XP. `breakdown`의 합과 항상 같다 |
+| `reward.breakdown` | `XpEvent[]` | 지급 사유별 내역. `{ type, label, xp }`를 그대로 한 줄씩 렌더링하면 된다 |
 | `reward.totalXp` | `number` | 누적 XP |
 | `reward.level` | `number` | 갱신된 레벨 |
+| `reward.currentLevelXp` | `number` | 현재 레벨 구간에서 모은 XP |
+| `reward.xpToNextLevel` | `number` | 다음 레벨까지 필요한 총량. 진행바는 `currentLevelXp / xpToNextLevel` |
 | `reward.leveledUp` | `boolean` | 이번 저장으로 레벨이 올랐는지 → 축하 연출 트리거 |
 | `reward.plantCount` | `number` | 이 식물을 지금까지 몇 번 발견했는지 |
 
-발견 횟수, XP, 레벨, 관찰 기록은 Supabase 함수 `record_observation_reward`가 하나의 트랜잭션에서 갱신한다. 저장 실패 시 업로드한 사진을 삭제한다.
+`breakdown`은 카드 획득 화면에 그대로 나열하기 위한 것이다. `xp`가 0인 항목(흔함 희귀도 등)은 화면에서 걸러도 된다.
+
+```
+관찰 +10 XP
+첫 발견 +90 XP
+보통 희귀도 +25 XP
++125 XP
+
+Lv.3  95 / 200 XP
+```
+
+XP는 서버가 계산하고, Supabase 함수 `record_collection_observation_reward`가 발견 횟수, 누적 XP, 레벨, 관찰 기록을 하나의 트랜잭션에서 갱신한다. 저장 실패 시 업로드한 사진을 삭제한다.
 
 **오류**: 400(입력) · 401(사용자 헤더 없음) · 404(없는 `plantId`) · 500(업로드/DB 실패)
 
@@ -390,9 +411,9 @@ Pl@ntNet 호출에는 타임아웃이 없다. 외부 응답이 지연되면 API 
     "profile": {
       "nickname": "식물 탐험가",
       "xp": 125,
-      "level": 1,
-      "currentLevelXp": 125,
-      "xpToNextLevel": 400
+      "level": 2,
+      "currentLevelXp": 25,
+      "xpToNextLevel": 150
     },
     "stats": {
       "totalObservations": 3,
@@ -443,11 +464,11 @@ Pl@ntNet 호출에는 타임아웃이 없다. 외부 응답이 지연되면 API 
 
 단계와 희귀도는 1:1로 대응한다.
 
-| `stage` | `rarity` | 한글 표기 | 첫 발견 XP |
-| ---: | --- | --- | ---: |
-| 1 | `common` | 흔함 | 50 |
-| 2 | `uncommon` | 보통 | 90 |
-| 3 | `rare` | 드묾 | 140 |
+| `stage` | `rarity` | 한글 표기 | 희귀도 보너스 | 첫 발견 합계 XP |
+| ---: | --- | --- | ---: | ---: |
+| 1 | `common` | 흔함 | +0 | 100 |
+| 2 | `uncommon` | 보통 | +25 | 125 |
+| 3 | `rare` | 드묾 | +50 | 150 |
 
 화면 표기에는 직접 정의한 매핑 대신 `types/domain.ts`의 상수를 사용한다.
 
@@ -456,18 +477,32 @@ import { RARITY_LABEL } from '@/types/domain'
 RARITY_LABEL[plant.rarity] // "흔함" | "보통" | "드묾"
 ```
 
-### 재발견 보상
+### 경험치 구성
 
-같은 식물을 다시 발견하면 직전 보상의 절반을 반올림하여 지급하며, 최소 보상은 5 XP이다.
+기본 경험치에 조건별 보너스를 더한다. 규칙은 전부 `lib/progress.ts`에 있다.
 
-- 1단계: `50 → 25 → 13 → 6 → 5 …`
-- 2단계: `90 → 45 → 23 → 11 → 6 → 5 …`
-- 3단계: `140 → 70 → 35 → 18 → 9 → 5 …`
-- 기타 식물: `0 XP`, 발견 횟수만 증가
+| 조건 | XP |
+| --- | ---: |
+| 유효한 관찰 | +10 |
+| 처음 발견한 종 | +90 |
+| 희귀도 보너스 (흔함 / 보통 / 드묾) | +0 / +25 / +50 |
+
+첫 발견 보너스와 희귀도 보너스는 도감 카드를 처음 등록할 때만 한 번 지급한다. 따라서:
+
+- 이미 모은 식물 재관찰: `10 XP`
+- 같은 날 같은 종 추가 촬영: `0 XP` (기준은 한국 시간 자정)
+- 도감 밖 기타 식물: `10 XP`, 첫 발견·희귀도 보너스 없음
+
+새로운 흔한 종 1개(100 XP)가 재관찰 10회와 같은 가치가 되도록 잡은 값이다.
 
 ### 레벨
 
-레벨 1→2에는 400 XP가 필요하며, 이후 요구량은 레벨마다 50 XP씩 증가한다. `400 → 450 → 500 → 550 …` (`lib/progress.ts`)
+레벨 1→2에는 100 XP가 필요하며, 이후 요구량은 레벨마다 50 XP씩 증가한다. `100 → 150 → 200 → 250 …` (`lib/progress.ts`)
+
+- `Lv.N → Lv.N+1 필요 XP = 100 + 50 × (N - 1)`
+- `Lv.N 도달 누적 XP = 100(N-1) + 25(N-1)(N-2)` → Lv.10은 누적 2,700 XP
+
+저장되는 값은 누적 XP 하나뿐이고 레벨과 구간 진행도는 거기서 파생한다. 누적 380 XP는 `Lv.3 · 130 / 200 XP`로 표시된다.
 
 ## 6. 화면별로 쓰는 필드
 

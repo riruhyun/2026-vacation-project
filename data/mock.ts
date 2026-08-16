@@ -70,9 +70,9 @@ export const MOCK_PROFILE: ProfileResponse = {
   profile: {
     nickname: "식물 탐험가",
     xp: 220,
-    level: 1,
-    currentLevelXp: 220,
-    xpToNextLevel: 400,
+    level: 2,
+    currentLevelXp: 120,
+    xpToNextLevel: 150,
   },
   stats: {
     totalObservations: MOCK_OBSERVATIONS.length,

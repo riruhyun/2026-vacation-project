@@ -264,6 +264,9 @@ begin
     raise exception 'PROFILE_NOT_FOUND';
   end if;
 
+  -- 애플리케이션(lib/progress.ts)이 계산한 XP를 그대로 적립합니다.
+  reward := greatest(coalesce(p_base_xp, 0), 0);
+
   if p_collection_card_id is not null then
     select display_name
     into effective_display_name
@@ -274,22 +277,6 @@ begin
     if not found then
       raise exception 'COLLECTION_CARD_NOT_FOUND';
     end if;
-
-    select coalesce((
-      select count
-      from public.user_collection_counts
-      where user_id = p_user_id
-        and collection_card_id = p_collection_card_id
-    ), 0)
-    into previous_count;
-
-    reward := case
-      when p_base_xp <= 0 then 0
-      else greatest(
-        5,
-        round(p_base_xp / power(2::numeric, previous_count))::integer
-      )
-    end;
 
     insert into public.user_collection_counts (
       user_id,
@@ -319,7 +306,6 @@ begin
         lower(btrim(p_identified_scientific_name));
 
     new_count := previous_count + 1;
-    reward := 0;
   end if;
 
   update public.profiles

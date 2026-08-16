@@ -50,6 +50,7 @@ export default function SearchScreen({
         koreanName: plant.koreanName,
         scientificName: plant.scientificName,
         stage: plant.stage,
+        rarity: plant.rarity,
       });
       if (!writeIdentifyResult(result)) {
         setError("관찰 결과를 임시 저장하지 못했어요. 저장 공간을 확인하고 다시 시도해 주세요.");
