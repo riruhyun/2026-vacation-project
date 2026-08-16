@@ -193,15 +193,6 @@ export function CandidatesScreen({
               ? "결과 화면 다시 열기"
               : `${selected?.koreanName ?? "선택한 식물"}로 기록하기`}
         </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          fullWidth
-          disabled={navigationLocked}
-          onClick={() => router.push("/search?mode=identify")}
-        >
-          후보에 없어요 · 직접 검색
-        </Button>
       </div>
     </div>
   );

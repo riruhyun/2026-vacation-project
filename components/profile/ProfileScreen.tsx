@@ -19,8 +19,18 @@ export default function ProfileScreen({ data }: { data: ProfilePageData }) {
       {/* TODO: 백엔드 프로필 수정 범위가 확정되면 설정 진입점을 복원한다. */}
 
       <section className="-mt-4 flex items-center gap-3.5">
-        <div className="flex h-[78px] w-[78px] shrink-0 items-center justify-center rounded-[var(--radius-control)] bg-[var(--color-primary)] text-[var(--color-surface)]">
-          <RiUser3Fill size={32} aria-hidden="true" />
+        <div className="flex h-[78px] w-[78px] shrink-0 items-center justify-center overflow-hidden rounded-[var(--radius-control)] bg-[var(--color-primary)] text-[var(--color-surface)]">
+          {profile.avatarUrl ? (
+            /* Supabase 스토리지의 공개 URL이라 next/image 원격 설정 없이 그대로 씁니다. */
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={profile.avatarUrl}
+              alt="프로필 사진"
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <RiUser3Fill size={32} aria-hidden="true" />
+          )}
         </div>
         <div className="min-w-0 flex-1">
           <p className="mb-1 text-xl font-bold text-[var(--color-text)]">

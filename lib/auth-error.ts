@@ -1,5 +1,9 @@
 export function authErrorMessage(error: { message?: string }) {
-  const message = error.message?.toLowerCase() ?? "";
+  const original = error.message ?? "";
+  // 서버가 이미 한국어로 이유를 알려준 경우(닉네임 중복 등)에는 그대로 보여줍니다.
+  if (/[가-힣]/.test(original)) return original;
+
+  const message = original.toLowerCase();
   if (message.includes("invalid login credentials")) {
     return "이메일 또는 비밀번호가 올바르지 않습니다.";
   }
