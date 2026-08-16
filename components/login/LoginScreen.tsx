@@ -8,6 +8,10 @@ type LoginScreenProps = {
   password: string;
   setPassword: (value: string) => void;
   onSubmit: () => void;
+  mode: "sign-in" | "sign-up";
+  onToggleMode: () => void;
+  errorMessage: string | null;
+  isSubmitting: boolean;
 };
 
 export default function LoginScreen({
@@ -16,6 +20,10 @@ export default function LoginScreen({
   password,
   setPassword,
   onSubmit,
+  mode,
+  onToggleMode,
+  errorMessage,
+  isSubmitting,
 }: LoginScreenProps) {
   return (
     <div className="flex min-h-dvh flex-col bg-[var(--color-background)] px-6 pb-7 pt-[76px]">
@@ -51,9 +59,10 @@ export default function LoginScreen({
           autoComplete="current-password"
           className="h-14 w-full rounded-[var(--radius-control)] border border-[var(--color-border)] bg-[var(--color-surface)] px-[18px] text-sm text-[var(--color-text)] outline-none placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary)]"
         />
-        <Button type="button" variant="primary" fullWidth onClick={onSubmit}>
-          이메일로 로그인
+        <Button type="button" variant="primary" fullWidth onClick={onSubmit} disabled={isSubmitting}>
+          {isSubmitting ? "처리 중..." : mode === "sign-in" ? "이메일로 로그인" : "이메일로 회원가입"}
         </Button>
+        {errorMessage ? <p role="alert" className="text-sm text-red-700">{errorMessage}</p> : null}
       </section>
 
       <div className="my-[34px] flex items-center gap-3 text-xs text-[var(--color-text-muted)]">
@@ -68,11 +77,10 @@ export default function LoginScreen({
 
       <button
         type="button"
-        disabled
-        aria-disabled="true"
-        className="mt-7 text-center text-sm text-[var(--color-text-muted)] disabled:cursor-not-allowed"
+        onClick={onToggleMode}
+        className="mt-7 text-center text-sm text-[var(--color-text-muted)]"
       >
-        회원가입 · 준비 중
+        {mode === "sign-in" ? "회원가입" : "로그인으로 돌아가기"}
       </button>
 
       <div className="mt-auto rounded-[var(--radius-card)] bg-[var(--color-info-surface)] px-[18px] py-5">

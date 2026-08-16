@@ -4,7 +4,7 @@ import { toObservationDto } from '@/lib/server/observation'
 import { getCollectionCardById } from '@/lib/server/collection-cards'
 import { BASE_XP_BY_STAGE, levelProgress } from '@/lib/progress'
 import { supabase } from '@/lib/server/supabase'
-import { userIdFrom } from '@/lib/server/user'
+import { userIdFromSession } from '@/lib/server/user'
 
 export const runtime = 'nodejs'
 
@@ -24,7 +24,7 @@ function text(form: FormData, key: string) {
 }
 
 export async function POST(request: Request) {
-  const userId = userIdFrom(request)
+  const userId = await userIdFromSession()
   if (!userId) return fail('x-user-id에 사용자 UUID가 필요합니다.', 401)
 
   try {

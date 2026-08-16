@@ -13,6 +13,7 @@ import type {
   PlantDetailResponseDto,
 } from '@/types/plant'
 import type { ProfileResponse } from '@/types/user'
+import type { ActivitiesResponseDto } from '@/types/activity'
 
 /**
  * 화면에서 API를 부를 때 쓰는 함수 모음입니다.
@@ -41,22 +42,6 @@ export class ApiError extends Error {
   }
 }
 
-// 로그인이 붙기 전까지 사용자를 구분하는 임시 수단입니다.
-// Supabase Auth를 연결하면 이 부분을 세션 토큰으로 바꾸고 헤더도 함께 교체합니다.
-let currentUserId: string | null = null
-
-export function setUserId(userId: string | null) {
-  currentUserId = userId
-}
-
-export function getUserId() {
-  return currentUserId
-}
-
-function userHeaders(): HeadersInit {
-  return currentUserId ? { 'x-user-id': currentUserId } : {}
-}
-
 function getServerBaseUrl() {
   if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL
   if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`
@@ -72,8 +57,19 @@ function resolveRequestUrl(path: string) {
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   let response: Response
   try {
+    const headers = new Headers(init?.headers)
+    if (typeof window === 'undefined') {
+      try {
+        const { cookies } = await import('next/headers')
+        const cookie = (await cookies()).toString()
+        if (cookie) headers.set('cookie', cookie)
+      } catch {
+        // Tests and non-request server work have no Next.js cookie store.
+      }
+    }
     response = await fetch(resolveRequestUrl(path), {
       ...init,
+      headers,
       cache: init?.cache ?? 'no-store',
     })
   } catch {
@@ -143,7 +139,6 @@ export function saveObservation(
 
   return request<CreateObservationResponseDto>('/api/observations', {
     method: 'POST',
-    headers: userHeaders(),
     body: form,
     signal,
   })
@@ -151,21 +146,19 @@ export function saveObservation(
 
 /** 공식 도감 전체와 기타 발견, 완성률을 가져옵니다. */
 export function getCollection() {
-  return request<CollectionResponseDto>('/api/collection', {
-    headers: userHeaders(),
-  })
+  return request<CollectionResponseDto>('/api/collection')
 }
 
 /** 식물 상세 정보와 내 관찰 기록을 가져옵니다. */
 export function getPlant(plantId: number) {
-  return request<PlantDetailResponseDto>(`/api/plants/${plantId}`, {
-    headers: userHeaders(),
-  })
+  return request<PlantDetailResponseDto>(`/api/plants/${plantId}`)
 }
 
 /** 닉네임, 누적 경험치, 관찰 통계를 가져옵니다. */
 export function getProfile() {
-  return request<ProfileResponse>('/api/profile', {
-    headers: userHeaders(),
-  })
+  return request<ProfileResponse>('/api/profile')
+}
+
+export function getActivities(limit = 3) {
+  return request<ActivitiesResponseDto>(`/api/activities?limit=${limit}`)
 }

@@ -181,7 +181,7 @@ export async function getProfileData(): Promise<ProfilePageData> {
       lastObservedAt: recentObservations[0]?.observedAt ?? null,
     },
     levelTitle: getLevelTitle(MOCK_PROFILE.profile.level),
-    recentObservations,
+    recentActivities: [],
   };
 }
 
