@@ -1,5 +1,5 @@
-import type { ObservationDto } from "./observation"
 import type { CollectionPlantDto, OtherFindingDto } from "./plant"
+import type { ActivityDto } from "./activity"
 
 export type Profile = {
   nickname: string | null
@@ -34,5 +34,5 @@ export type HomeData = {
 
 export type ProfilePageData = ProfileResponse & {
   levelTitle: string
-  recentObservations: ObservationDto[]
+  recentActivities: ActivityDto[]
 }

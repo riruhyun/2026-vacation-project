@@ -2,7 +2,7 @@ import { getCollectionCards } from '@/lib/server/collection-cards'
 import { errorMessage, fail, ok } from '@/lib/server/http'
 import { imageUrl } from '@/lib/server/image'
 import { supabase } from '@/lib/server/supabase'
-import { userIdFrom } from '@/lib/server/user'
+import { userIdFromSession } from '@/lib/server/user'
 
 type ObservationRow = {
   id: string
@@ -22,8 +22,8 @@ type CountRow = {
   count: number
 }
 
-export async function GET(request: Request) {
-  const userId = userIdFrom(request)
+export async function GET() {
+  const userId = await userIdFromSession()
   if (!userId) return fail('x-user-id에 사용자 UUID가 필요합니다.', 401)
 
   try {

@@ -2,9 +2,10 @@ import { RiUser3Fill } from "@remixicon/react";
 import PageHeader from "@/components/layout/PageHeader";
 import ProgressBar from "@/components/home/ProgressBar";
 import type { ProfilePageData } from "@/types/user";
+import SignOutButton from "./SignOutButton";
 
 export default function ProfileScreen({ data }: { data: ProfilePageData }) {
-  const { profile, stats, recentObservations, levelTitle } = data;
+  const { profile, stats, recentActivities, levelTitle } = data;
 
   const cards = [
     { label: "공식 발견", value: stats.officialPlants },
@@ -47,16 +48,17 @@ export default function ProfileScreen({ data }: { data: ProfilePageData }) {
       <section>
         <h2 className="mb-4 text-lg font-bold text-[var(--color-text)]">최근 활동</h2>
         <div className="flex flex-col gap-3">
-          {recentObservations.slice(0, 3).map((observation) => (
-            <div key={observation.id} className="rounded-[var(--radius-control)] bg-[var(--color-surface)] px-4 py-3">
-              <p className="text-sm font-medium text-[var(--color-text)]">{observation.displayName} 관찰</p>
-              <time className="text-xs text-[var(--color-text-muted)]" dateTime={observation.observedAt}>
-                {new Date(observation.observedAt).toLocaleDateString("ko-KR")}
+          {recentActivities.length === 0 ? <p className="text-sm text-[var(--color-text-muted)]">아직 활동 기록이 없어요.</p> : recentActivities.map((activity) => (
+            <div key={activity.id} className="rounded-[var(--radius-control)] bg-[var(--color-surface)] px-4 py-3">
+              <p className="text-sm font-medium text-[var(--color-text)]">{activity.type === "new_plant" ? `${activity.displayName ?? "식물"} 발견` : `Lv. ${activity.level} 달성`}</p>
+              <time className="text-xs text-[var(--color-text-muted)]" dateTime={activity.createdAt}>
+                {new Date(activity.createdAt).toLocaleDateString("ko-KR")}
               </time>
             </div>
           ))}
         </div>
       </section>
+      <SignOutButton />
     </div>
   );
 }

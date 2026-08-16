@@ -3,7 +3,7 @@ import { errorMessage, fail, ok } from '@/lib/server/http'
 import { getForestPlant, getForestPlantByNumber } from '@/lib/server/forest'
 import { imageUrl } from '@/lib/server/image'
 import { supabase } from '@/lib/server/supabase'
-import { userIdFrom } from '@/lib/server/user'
+import { userIdFromSession } from '@/lib/server/user'
 
 type ObservationRow = {
   id: string
@@ -30,7 +30,7 @@ export async function GET(
       ? await getForestPlantByNumber(card.representativePlantPilbkNo)
       : await getForestPlant(card.scientificName)
 
-    const userId = userIdFrom(request)
+    const userId = await userIdFromSession()
     let observations: ObservationRow[] = []
 
     if (userId) {
