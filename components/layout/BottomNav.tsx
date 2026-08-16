@@ -54,7 +54,7 @@ export default function BottomNav() {
   function isActive(href: string) {
     if (href === "/") return pathname === "/";
     if (href === "/collection") {
-      return ["/collection", "/plants", "/findings", "/search"].some(
+      return ["/collection", "/plants", "/findings"].some(
         (route) => pathname.startsWith(route),
       );
     }
