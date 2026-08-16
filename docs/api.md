@@ -198,8 +198,31 @@ sooji_01  →  sooji_01@id.plantdex.invalid
 
 **비밀번호 분실 복구가 없습니다.** 구글 계정에 접근할 수 없고 사이트 전용 비밀번호도 설정하지 않은 사용자는 들어올 방법이 없습니다. 가입 시 예방을 권고하는 화면도 두지 않았습니다. 시연 범위 밖으로 의도적으로 둔 것이며, 필요해지면 Supabase의 비밀번호 재설정 메일을 붙이면 됩니다.
 
+### 첫 화면은 로그아웃 상태입니다
+
+기본 사용자는 없습니다. 토큰이 없으면 보호 API는 전부 401이고, 화면은 로그인 화면을 그려야 합니다.
+
+다만 "로그인 안 함"을 확인하려고 401을 받아볼 필요는 없습니다. `GET /api/auth/session`은 로그아웃도 정상 응답으로 답합니다.
+
+```json
+{ "success": true, "data": { "authenticated": false, "user": null } }
+```
+
+```json
+{
+  "success": true,
+  "data": {
+    "authenticated": true,
+    "user": { "id": "...", "account": "sooji_01", "isLocalId": true }
+  }
+}
+```
+
+만료된 토큰도 `authenticated: false`입니다. 화면은 이 값 하나만 보고 분기하면 되고, 401을 오류로 다룰 수 있게 됩니다.
+
 ### 엔드포인트
 
+- `GET /api/auth/session`: 지금 로그인한 사용자를 알려줍니다. 로그아웃 상태여도 200입니다.
 - `POST /api/auth/signup`: `id`, `password`, 선택적 `nickname`으로 가입하고 바로 로그인합니다. 이메일 주소는 거부합니다.
 - `POST /api/auth/login`: `id` 또는 `email`과 `password`로 로그인하고 `plant-access-token` HttpOnly 쿠키를 설정합니다.
 - `POST /api/auth/password`: 로그인한 사용자의 사이트 전용 비밀번호를 설정합니다.

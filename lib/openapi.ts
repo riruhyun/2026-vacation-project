@@ -102,6 +102,19 @@ export const openApiDocument = {
         },
       },
     },
+    "/api/auth/session": {
+      get: {
+        tags: ["Auth"],
+        summary: "Who is signed in",
+        description:
+          "Reports the current session. Being signed out is a normal answer, not an error, so this never returns 401 — the app can render its logged-out state from a 200.",
+        operationId: "getSession",
+        security: [{}, ...userSecurity],
+        responses: {
+          "200": successResponse("Current session", "SessionResponse"),
+        },
+      },
+    },
     "/api/auth/logout": {
       post: {
         tags: ["Auth"],
@@ -381,6 +394,31 @@ export const openApiDocument = {
               authenticated: { type: "boolean" },
               accessToken: { type: "string", nullable: true },
               expiresAt: { type: "integer", nullable: true },
+            },
+          },
+        },
+      },
+      SessionResponse: {
+        type: "object",
+        required: ["success", "data"],
+        properties: {
+          success: { type: "boolean", enum: [true] },
+          data: {
+            type: "object",
+            required: ["authenticated", "user"],
+            properties: {
+              authenticated: { type: "boolean" },
+              user: {
+                type: "object",
+                nullable: true,
+                description: "null when nobody is signed in.",
+                required: ["id", "account", "isLocalId"],
+                properties: {
+                  id: { type: "string", format: "uuid" },
+                  account: { type: "string", example: "sooji_01" },
+                  isLocalId: { type: "boolean" },
+                },
+              },
             },
           },
         },

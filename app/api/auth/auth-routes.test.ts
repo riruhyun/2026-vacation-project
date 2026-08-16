@@ -8,6 +8,8 @@ const authMocks = vi.hoisted(() => ({
   updateUserById: vi.fn(),
   createUser: vi.fn(),
   userIdFrom: vi.fn(),
+  getUser: vi.fn(),
+  accessTokenFrom: vi.fn(),
 }))
 
 const base = { isLocalId: false }
@@ -29,6 +31,7 @@ vi.mock('@/lib/server/account', () => ({
 vi.mock('@/lib/server/supabase', () => ({
   supabase: {
     auth: {
+      getUser: authMocks.getUser,
       admin: {
         updateUserById: authMocks.updateUserById,
         createUser: authMocks.createUser,
@@ -47,13 +50,14 @@ vi.mock('@/lib/server/auth', () => ({
 }))
 
 vi.mock('@/lib/server/user', () => ({
-  accessTokenFrom: () => 'existing-token',
+  accessTokenFrom: authMocks.accessTokenFrom,
   userIdFrom: authMocks.userIdFrom,
 }))
 
 import { POST as login } from './login/route'
 import { POST as logout } from './logout/route'
 import { POST as setPassword } from './password/route'
+import { GET as session } from './session/route'
 import { POST as signup } from './signup/route'
 
 function jsonRequest(path: string, body: unknown) {
@@ -68,6 +72,51 @@ describe('email auth routes', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     authMocks.lookupAccount.mockResolvedValue(NO_ACCOUNT)
+    authMocks.accessTokenFrom.mockReturnValue('existing-token')
+  })
+
+  it('answers 200 with no user when nobody is signed in', async () => {
+    authMocks.accessTokenFrom.mockReturnValue(null)
+
+    const response = await session(new Request('http://localhost/api/auth/session'))
+
+    // 로그아웃은 오류가 아니므로 화면이 401을 받아 넘어질 일이 없어야 합니다.
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({
+      success: true,
+      data: { authenticated: false, user: null },
+    })
+  })
+
+  it('treats an expired token as signed out rather than as an error', async () => {
+    authMocks.getUser.mockResolvedValue({
+      data: { user: null },
+      error: { message: 'token expired' },
+    })
+
+    const response = await session(new Request('http://localhost/api/auth/session'))
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toMatchObject({
+      data: { authenticated: false, user: null },
+    })
+  })
+
+  it('returns the id instead of the stored .invalid address', async () => {
+    authMocks.getUser.mockResolvedValue({
+      data: { user: { id: 'user-id', email: 'sooji@id.plantdex.invalid' } },
+      error: null,
+    })
+
+    const response = await session(new Request('http://localhost/api/auth/session'))
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toMatchObject({
+      data: {
+        authenticated: true,
+        user: { id: 'user-id', account: 'sooji', isLocalId: true },
+      },
+    })
   })
 
   it('sets the Swagger-compatible session cookie after login', async () => {
