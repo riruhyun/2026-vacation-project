@@ -1,3 +1,4 @@
+import type { XpReason } from "@/lib/progress";
 import type { ObservationId, PlantId, PlantStage } from "./domain";
 
 export type ObservationResult = "new" | "duplicate";
@@ -25,8 +26,12 @@ export type CreateObservationResponseDto = {
   observation: ObservationDto;
   reward: {
     xp: number;
+    /** 왜 이만큼 받았는지 보여주는 항목입니다. 보상이 없으면 빈 배열입니다. */
+    breakdown: XpReason[];
     totalXp: number;
     level: number;
+    currentLevelXp: number;
+    xpToNextLevel: number;
     leveledUp: boolean;
     plantCount: number;
   };

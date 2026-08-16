@@ -52,9 +52,15 @@ const RESULT: CreateObservationResponseDto = {
     observedAt: "2026-08-13T12:00:00.000Z",
   },
   reward: {
-    xp: 50,
-    totalXp: 290,
-    level: 1,
+    xp: 100,
+    breakdown: [
+      { label: "관찰", xp: 10 },
+      { label: "첫 발견", xp: 90 },
+    ],
+    totalXp: 340,
+    level: 3,
+    currentLevelXp: 90,
+    xpToNextLevel: 200,
     leveledUp: false,
     plantCount: 1,
   },

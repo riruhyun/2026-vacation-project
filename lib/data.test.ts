@@ -184,24 +184,24 @@ describe("mock data access", () => {
     });
 
     await expect(getMockObservationResult(candidates[0])).resolves.toMatchObject({
-      reward: { xp: 50 },
+      reward: { xp: 100 },
     });
     await expect(getMockObservationResult(candidates[1])).resolves.toMatchObject({
-      reward: { xp: 90 },
+      reward: { xp: 125 },
     });
     await expect(getMockObservationResult(candidates[2])).resolves.toMatchObject({
-      reward: { xp: 140 },
+      reward: { xp: 150 },
     });
   });
 
-  it("reduces duplicate rewards using the existing observation count", async () => {
+  it("pays only the flat re-observation amount for an already collected plant", async () => {
     const candidate = (await getMockIdentifyResult("leaf")).candidates.find(
       ({ plantId }) => plantId === 1,
     )!;
 
     await expect(getMockObservationResult(candidate)).resolves.toMatchObject({
       result: "duplicate",
-      reward: { xp: 13, plantCount: 3 },
+      reward: { xp: 10, plantCount: 3 },
     });
   });
 

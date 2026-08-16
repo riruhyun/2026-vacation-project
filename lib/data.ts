@@ -25,7 +25,7 @@ import type {
   PlantDetailScreenData,
 } from "@/types/plant";
 import type { HomeData, ProfilePageData } from "@/types/user";
-import { levelProgress, observationXp } from "@/lib/progress";
+import { levelProgress, observationXp, RARITY_BY_STAGE } from "@/lib/progress";
 
 const DEFAULT_DESCRIPTION = "도감 설명을 준비하고 있습니다.";
 const DEFAULT_INFORMATION_SOURCE = "산림청 국립수목원";
@@ -271,8 +271,13 @@ export async function getMockObservationResult(
     groups.get(selection.scientificName.toLowerCase())?.observations.length ?? 0;
   const result = previousCount > 0 ? "duplicate" : "new";
   const observation = MOCK_OBSERVATION_TEMPLATES[result];
-  const xp = observationXp(selection.official ? selection.stage : null, previousCount);
-  const totalXp = MOCK_PROFILE.profile.xp + xp;
+  const earned = observationXp(
+    selection.official && selection.stage
+      ? RARITY_BY_STAGE[selection.stage]
+      : null,
+    previousCount,
+  );
+  const totalXp = MOCK_PROFILE.profile.xp + earned.xp;
   const progress = levelProgress(totalXp);
 
   return {
@@ -284,9 +289,12 @@ export async function getMockObservationResult(
       displayName: selection.koreanName,
     },
     reward: {
-      xp,
+      xp: earned.xp,
+      breakdown: earned.breakdown,
       totalXp,
       level: progress.level,
+      currentLevelXp: progress.currentXp,
+      xpToNextLevel: progress.xpToNextLevel,
       leveledUp: progress.level > MOCK_PROFILE.profile.level,
       plantCount: previousCount + 1,
     },

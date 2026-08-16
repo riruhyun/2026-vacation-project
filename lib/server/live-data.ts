@@ -193,7 +193,8 @@ async function profileData(userId: string | null, collection: CollectionResponse
     profile: {
       nickname: profileRow?.nickname || null,
       xp,
-      level: profileRow?.level || progress.level,
+      // profiles.level은 DB 함수가 예전 곡선으로 채웁니다. 누적 XP에서 다시 셉니다.
+      level: progress.level,
       currentLevelXp: progress.currentXp,
       xpToNextLevel: progress.xpToNextLevel,
       onboarded: Boolean(profileRow?.onboarded_at),

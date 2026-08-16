@@ -791,13 +791,46 @@ export const openApiDocument = {
       },
       ObservationReward: {
         type: "object",
-        required: ["xp", "totalXp", "level", "leveledUp", "plantCount"],
+        required: [
+          "xp",
+          "breakdown",
+          "totalXp",
+          "level",
+          "currentLevelXp",
+          "xpToNextLevel",
+          "leveledUp",
+          "plantCount",
+        ],
         properties: {
           xp: { type: "integer", minimum: 0 },
-          totalXp: { type: "integer", minimum: 0 },
+          breakdown: {
+            type: "array",
+            description:
+              "Why this much was awarded, ready to print line by line. Empty when nothing was earned.",
+            items: { $ref: "#/components/schemas/XpReason" },
+          },
+          totalXp: {
+            type: "integer",
+            minimum: 0,
+            description: "Lifetime xp. This is the stored value everything else is derived from.",
+          },
           level: { type: "integer", minimum: 1 },
+          currentLevelXp: {
+            type: "integer",
+            minimum: 0,
+            description: "Xp earned inside the current level, for the progress bar.",
+          },
+          xpToNextLevel: { type: "integer", minimum: 1 },
           leveledUp: { type: "boolean" },
           plantCount: { type: "integer", minimum: 1 },
+        },
+      },
+      XpReason: {
+        type: "object",
+        required: ["label", "xp"],
+        properties: {
+          label: { type: "string", example: "첫 발견" },
+          xp: { type: "integer", example: 90 },
         },
       },
       PlantStage: { type: "integer", enum: [1, 2, 3] },
