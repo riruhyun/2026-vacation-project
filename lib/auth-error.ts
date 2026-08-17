@@ -10,6 +10,9 @@ export function authErrorMessage(error: { message?: string }) {
   if (message.includes("already registered")) {
     return "이미 가입된 이메일입니다. 로그인해 주세요.";
   }
+  if (message.includes("unable to validate email address")) {
+    return "올바른 이메일 형식으로 입력해 주세요.";
+  }
   if (message.includes("at least 6 characters")) {
     return "비밀번호는 6자 이상이어야 합니다.";
   }
