@@ -89,22 +89,22 @@ export default function LoginScreen({
         {errorMessage ? <p role="alert" className="text-sm text-red-700">{errorMessage}</p> : null}
       </section>
 
-      <div className="my-[34px] flex items-center gap-3 text-xs text-[var(--color-text-muted)]">
-        <span className="h-px flex-1 bg-[var(--color-border)]" />
-        <span>또는</span>
-        <span className="h-px flex-1 bg-[var(--color-border)]" />
-      </div>
-
-      <Button type="button" variant="secondary" fullWidth disabled aria-disabled="true">
-        Google로 계속하기 · 준비 중
-      </Button>
-
       <button
         type="button"
         onClick={onToggleMode}
         className="mt-7 text-center text-sm text-[var(--color-text-muted)]"
       >
-        {isSignUp ? "로그인으로 돌아가기" : "회원가입"}
+        {isSignUp ? (
+          <>
+            계정이 이미 있으신가요?{" "}
+            <span className="font-bold text-[var(--color-primary)]">로그인</span>
+          </>
+        ) : (
+          <>
+            계정이 없으신가요?{" "}
+            <span className="font-bold text-[var(--color-primary)]">회원가입</span>
+          </>
+        )}
       </button>
 
       <div className="mt-auto rounded-[var(--radius-card)] bg-[var(--color-info-surface)] px-[18px] py-5">
