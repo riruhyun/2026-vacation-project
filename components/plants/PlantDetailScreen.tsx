@@ -29,7 +29,11 @@ export default function PlantDetailScreen({ data }: { data: PlantDetailScreenDat
         )}
       </div>
 
-      {data.rarity ? <RarityBadge rarity={data.rarity} size="md" /> : null}
+      {data.rarity ? (
+        <div className="self-start">
+          <RarityBadge rarity={data.rarity} size="md" />
+        </div>
+      ) : null}
 
       <div>
         <h2 className="text-[28px] font-bold text-[var(--color-primary-strong)]">{data.koreanName}</h2>
