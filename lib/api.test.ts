@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   ApiError,
+  deleteAvatar,
   identifyPlant,
   saveObservation,
   updateProfile,
@@ -184,6 +185,22 @@ describe("updateProfile", () => {
     const form = init.body as FormData;
     expect(form.has("nickname")).toBe(false);
     expect(form.get("avatar")).toBe(avatar);
+  });
+});
+
+describe("deleteAvatar", () => {
+  it("deletes the avatar through the dedicated endpoint", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      success({ profile: { nickname: "탐험가", avatarUrl: null } }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await deleteAvatar();
+
+    const [path, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(path).toMatch(/\/api\/profile\/avatar$/);
+    expect(init.method).toBe("DELETE");
+    expect(init.body).toBeUndefined();
   });
 });
 

@@ -5,7 +5,7 @@ import { RiPencilFill, RiUser3Fill } from "@remixicon/react";
 import { useRouter } from "next/navigation";
 import PageHeader from "@/components/layout/PageHeader";
 import ProgressBar from "@/components/home/ProgressBar";
-import { updateProfile } from "@/lib/api";
+import { deleteAvatar, updateProfile } from "@/lib/api";
 import {
   ALLOWED_IMAGE_TYPES,
   IMAGE_INPUT_ACCEPT,
@@ -27,6 +27,8 @@ export default function ProfileScreen({ data }: { data: ProfilePageData }) {
   const [nickname, setNickname] = useState(profile.nickname ?? "");
   const [isSavingNickname, setIsSavingNickname] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [isDeletingAvatar, setIsDeletingAvatar] = useState(false);
+  const [isAvatarMenuOpen, setIsAvatarMenuOpen] = useState(false);
   const [nicknameErrorMessage, setNicknameErrorMessage] = useState<string | null>(null);
   const [avatarErrorMessage, setAvatarErrorMessage] = useState<string | null>(null);
 
@@ -96,35 +98,90 @@ export default function ProfileScreen({ data }: { data: ProfilePageData }) {
     }
   }
 
+  async function removeAvatar() {
+    setIsAvatarMenuOpen(false);
+    const shouldRemove = window.confirm(
+      "프로필 사진을 기본 사진으로 되돌릴까요?",
+    );
+    if (!shouldRemove) return;
+
+    setIsDeletingAvatar(true);
+    setAvatarErrorMessage(null);
+    try {
+      await deleteAvatar();
+      router.refresh();
+    } catch (error) {
+      setAvatarErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "프로필 사진 삭제 중 오류가 발생했습니다.",
+      );
+    } finally {
+      setIsDeletingAvatar(false);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-8">
       <PageHeader title="마이페이지" />
 
       <section className="-mt-4 flex items-center gap-3.5">
-        <button
-          type="button"
-          onClick={() => avatarInputRef.current?.click()}
-          disabled={isUploadingAvatar}
-          aria-label={
-            isUploadingAvatar ? "프로필 사진 업로드 중" : "프로필 사진 변경"
-          }
-          className="relative flex h-[78px] w-[78px] shrink-0 items-center justify-center overflow-hidden rounded-[var(--radius-control)] bg-[var(--color-primary)] text-[var(--color-surface)] outline-offset-2 focus-visible:outline-2 focus-visible:outline-[var(--color-primary-strong)] disabled:cursor-wait"
-        >
-          {profile.avatarUrl ? (
-            /* Supabase 스토리지의 공개 URL이라 next/image 원격 설정 없이 그대로 씁니다. */
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img
-              src={profile.avatarUrl}
-              alt="프로필 사진"
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <RiUser3Fill size={32} aria-hidden="true" />
-          )}
-          <span className="absolute inset-x-0 bottom-0 bg-black/55 py-1 text-[10px] font-bold">
-            {isUploadingAvatar ? "업로드 중" : "사진 변경"}
-          </span>
-        </button>
+        <div className="relative shrink-0">
+          <button
+            type="button"
+            onClick={() => setIsAvatarMenuOpen((isOpen) => !isOpen)}
+            disabled={isUploadingAvatar || isDeletingAvatar}
+            aria-label="프로필 사진 수정하기"
+            aria-expanded={isAvatarMenuOpen}
+            aria-controls="avatar-edit-menu"
+            className="relative flex h-[78px] w-[78px] items-center justify-center overflow-hidden rounded-[var(--radius-control)] bg-[var(--color-primary)] text-[var(--color-surface)] outline-offset-2 focus-visible:outline-2 focus-visible:outline-[var(--color-primary-strong)] disabled:cursor-wait"
+          >
+            {profile.avatarUrl ? (
+              /* Supabase 스토리지의 공개 URL이라 next/image 원격 설정 없이 그대로 씁니다. */
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={profile.avatarUrl}
+                alt="프로필 사진"
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <RiUser3Fill size={32} aria-hidden="true" />
+            )}
+            <span className="absolute inset-x-0 bottom-0 bg-black/55 py-1 text-[10px] font-bold">
+              {isUploadingAvatar
+                ? "업로드 중"
+                : isDeletingAvatar
+                  ? "삭제 중"
+                  : "수정하기"}
+            </span>
+          </button>
+          {isAvatarMenuOpen ? (
+            <div
+              id="avatar-edit-menu"
+              className="absolute left-0 top-[calc(100%+8px)] z-10 w-36 rounded-[var(--radius-control)] border border-[var(--color-border)] bg-[var(--color-surface)] p-1.5 shadow-lg"
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAvatarMenuOpen(false);
+                  avatarInputRef.current?.click();
+                }}
+                className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-info-surface)]"
+              >
+                사진 변경
+              </button>
+              {profile.avatarUrl ? (
+                <button
+                  type="button"
+                  onClick={() => void removeAvatar()}
+                  className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-info-surface)]"
+                >
+                  사진 삭제
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
         <input
           ref={avatarInputRef}
           type="file"
