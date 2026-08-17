@@ -203,11 +203,35 @@ await updateProfile({ nickname: '초록탐험가', avatar: file })
 
 기존 Supabase 프로젝트는 `supabase/profile-identity-migration.sql`을 한 번 실행하세요. 이미 중복된 닉네임이 있으면 먼저 만들어진 계정이 이름을 지키고, 나중 계정에만 id 앞 8자리가 붙습니다.
 
+## DELETE /api/profile/avatar
+
+프로필 사진을 지우고 기본 사진으로 되돌립니다. 본문은 없습니다.
+
+사진만 지우는 요청이라 계정 삭제로 읽히지 않게 `/api/profile` 아래에 두었습니다.
+
+```ts
+import { deleteAvatar } from '@/lib/api'
+
+await deleteAvatar()
+```
+
+```json
+{
+  "success": true,
+  "data": { "profile": { "nickname": "초록탐험가", "avatarUrl": null } }
+}
+```
+
+응답은 `PATCH /api/profile`과 같은 형태이고 `avatarUrl`은 항상 `null`입니다. 이미 기본 사진인 상태에서 호출해도 성공합니다. 두 번 눌러도 결과가 같아야 하기 때문입니다.
+
+`profiles.avatar_path`를 먼저 비우고 나서 `avatars` 버킷의 파일을 지웁니다. 순서를 뒤집으면 열 갱신이 실패했을 때 없는 파일을 가리키게 됩니다.
+
 ## 조회 API
 
 - `GET /api/collection`: 공식 50종의 수집 여부와 식물별 발견 횟수, 기타 발견 목록 (인증 필요)
 - `GET /api/plants/:id`: 로컬 공식 목록과 산림청 설명, 해당 사용자의 관찰 기록 (인증 필요)
 - `GET /api/profile`: 닉네임, 프로필 사진 주소, 누적 XP, 레벨, 현재 레벨 XP, 다음 레벨 요구 XP, 수집 통계 (인증 필요)
 - `GET /api/activities`: 최근 활동 기록. `?limit=`으로 개수를 정하며 기본 3, 최대 20 (인증 필요)
+- `DELETE /api/profile/avatar`: 프로필 사진을 지우고 기본 사진으로 되돌림 (인증 필요)
 - `GET /api/health`: 환경변수 설정 여부 확인. 외부 API 요청은 보내지 않음
 - `GET /api/openapi`: OpenAPI 3.0.3 문서. 정의는 `lib/openapi.ts`에 있습니다

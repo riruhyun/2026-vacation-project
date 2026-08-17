@@ -159,6 +159,22 @@ export const openApiDocument = {
         },
       },
     },
+    "/api/profile/avatar": {
+      delete: {
+        tags: ["Profile"],
+        summary: "프로필 사진 삭제",
+        description:
+          "사진을 지우고 기본 사진으로 되돌립니다. 이미 기본 사진이어도 200을 돌려줍니다.",
+        operationId: "deleteAvatar",
+        security: sessionSecurity,
+        responses: {
+          "200": successResponse("사진이 지워진 프로필", "UpdateProfileResponse"),
+          "401": errorResponse("로그인이 필요함"),
+          "404": errorResponse("프로필을 찾을 수 없음"),
+          "500": errorResponse("프로필 사진 삭제 실패"),
+        },
+      },
+    },
     "/api/activities": {
       get: {
         tags: ["Profile"],

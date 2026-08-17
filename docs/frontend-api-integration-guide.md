@@ -73,7 +73,7 @@ Supabase Auth 세션 쿠키를 사용한다. `/api/auth/sign-in` 또는 `/api/au
 | `GET /api/plants/:id` | 선택 — 없으면 `userCollection`이 빈 상태로 반환됨 |
 | `POST /api/observations` | **필수** (없으면 401) |
 | `GET /api/collection` | **필수** (없으면 401) |
-| `GET /api/profile` · `PATCH /api/profile` | **필수** (없으면 401) |
+| `GET /api/profile` · `PATCH /api/profile` · `DELETE /api/profile/avatar` | **필수** (없으면 401) |
 | `GET /api/activities` | **필수** (없으면 401) |
 
 ### 회원가입
@@ -492,6 +492,31 @@ await updateProfile({ nickname: '초록탐험가', avatar: file })
 프로필 사진은 전용 `avatars` 버킷에 `{userId}/{uuid}.jpg` 형태로 저장된다. 사진을 바꾸면 이전 파일은 삭제된다.
 
 **오류**: 400(변경할 내용 없음·형식 위반) · 401 · 404(프로필 없음) · **409(닉네임 중복)** · 500
+
+### DELETE /api/profile/avatar
+
+프로필 사진을 지우고 기본 사진으로 되돌린다. `PATCH`로는 사진을 비울 수 없어서 삭제만 따로 둔다. 계정 삭제로 읽히지 않게 `/api/profile` 아래에 놓았다.
+
+**요청** — 본문 없음 (로그인 필요)
+
+```ts
+import { deleteAvatar } from '@/lib/api'
+
+await deleteAvatar()
+```
+
+**응답 구조** — `PATCH /api/profile`과 같은 형태이고 `avatarUrl`은 항상 `null`이다.
+
+```json
+{
+  "success": true,
+  "data": { "profile": { "nickname": "초록탐험가", "avatarUrl": null } }
+}
+```
+
+**이미 기본 사진이어도 200이다.** 버튼을 두 번 눌러도 같은 결과여야 하므로 오류로 처리하지 않는다. 화면에서는 `profile.avatarUrl`이 `null`일 때 삭제 버튼을 감추는 편이 자연스럽다.
+
+**오류**: 401 · 404(프로필 없음) · 500
 
 ### GET /api/activities
 

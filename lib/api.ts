@@ -175,6 +175,13 @@ export function updateProfile(input: UpdateProfileInput) {
   })
 }
 
+/** 프로필 사진을 지우고 기본 사진으로 되돌립니다. 이미 기본이어도 성공합니다. */
+export function deleteAvatar() {
+  return request<UpdateProfileResponse>('/api/profile/avatar', {
+    method: 'DELETE',
+  })
+}
+
 export function getActivities(limit = 3) {
   return request<ActivitiesResponseDto>(`/api/activities?limit=${limit}`)
 }
