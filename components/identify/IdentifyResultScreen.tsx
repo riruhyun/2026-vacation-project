@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import ProgressBar from "@/components/home/ProgressBar";
 import PageHeader from "@/components/layout/PageHeader";
 import Button from "@/components/ui/Button";
 import { clearIdentifySession } from "@/lib/identify-storage";
@@ -45,9 +46,6 @@ function XpBreakdown({ response }: IdentifyResultScreenProps) {
 
 function LevelProgress({ response }: IdentifyResultScreenProps) {
   const { level, currentLevelXp, xpToNextLevel } = response.reward;
-  const percent = xpToNextLevel
-    ? Math.min(Math.round((currentLevelXp / xpToNextLevel) * 100), 100)
-    : 0;
 
   return (
     <div className="mt-4">
@@ -57,11 +55,8 @@ function LevelProgress({ response }: IdentifyResultScreenProps) {
           {currentLevelXp} / {xpToNextLevel} XP
         </span>
       </div>
-      <div className="mt-2 h-2 overflow-hidden rounded-full bg-[var(--color-placeholder)]">
-        <div
-          className="h-full rounded-full bg-[var(--color-primary)]"
-          style={{ width: `${percent}%` }}
-        />
+      <div className="mt-2">
+        <ProgressBar value={currentLevelXp} max={xpToNextLevel} label="레벨 진행도" />
       </div>
     </div>
   );

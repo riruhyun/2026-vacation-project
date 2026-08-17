@@ -1,5 +1,7 @@
 "use client";
 
+import Button from "@/components/ui/Button";
+
 type ErrorPageProps = {
   error: Error & { digest?: string };
   reset: () => void;
@@ -14,13 +16,13 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
           {error.message || "잠시 후 다시 시도해 주세요."}
         </p>
       </div>
-      <button
+      <Button
         type="button"
         onClick={reset}
-        className="rounded-[var(--radius-control)] bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-[var(--color-surface)]"
+        className="min-h-0 px-4 py-2 text-sm font-semibold"
       >
         다시 시도
-      </button>
+      </Button>
     </div>
   );
 }
