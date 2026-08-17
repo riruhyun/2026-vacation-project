@@ -34,7 +34,7 @@ export default function HomeScreen({ data }: { data: HomeData }) {
         </p>
         <Link
           href="/capture"
-          className="whitespace-nowrap rounded-[var(--radius-control)] bg-[var(--color-accent)] px-4 py-2 text-xs font-semibold text-[var(--color-primary-strong)]"
+          className="whitespace-nowrap rounded-[var(--radius-control)] bg-[var(--color-accent)] px-4 py-2 text-xs font-semibold text-black"
         >
           촬영하기
         </Link>
