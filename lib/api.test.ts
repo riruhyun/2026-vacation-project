@@ -3,7 +3,7 @@ import {
   ApiError,
   identifyPlant,
   saveObservation,
-  setUserId,
+  updateProfile,
 } from "@/lib/api";
 
 const IDENTIFY_RESPONSE = {
@@ -46,7 +46,6 @@ function success(data: unknown, status = 200) {
 }
 
 afterEach(() => {
-  setUserId(null);
   vi.unstubAllGlobals();
 });
 
@@ -77,7 +76,7 @@ describe("identifyPlant", () => {
 
     const [path, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     const form = init.body as FormData;
-    expect(path).toBe("/api/identify");
+    expect(path).toMatch(/\/api\/identify$/);
     expect(init.method).toBe("POST");
     expect((form.get("image") as File).type).toBe("image/jpeg");
     expect(form.get("organ")).toBe("leaf");
@@ -152,6 +151,39 @@ describe("saveObservation", () => {
     expect(form.has("plantId")).toBe(false);
     expect(form.get("scientificName")).toBe("Taraxacum officinale");
     expect(form.get("displayName")).toBe("Common dandelion");
+  });
+});
+
+describe("updateProfile", () => {
+  it("sends a nickname as multipart form data", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      success({ profile: { nickname: "새 탐험가", avatarUrl: null } }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await updateProfile({ nickname: "새 탐험가" });
+
+    const [path, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const form = init.body as FormData;
+    expect(path).toMatch(/\/api\/profile$/);
+    expect(init.method).toBe("PATCH");
+    expect(form.get("nickname")).toBe("새 탐험가");
+    expect(form.has("avatar")).toBe(false);
+  });
+
+  it("sends an avatar without an unchanged nickname", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      success({ profile: { nickname: "탐험가", avatarUrl: "https://example.com/avatar.jpg" } }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const avatar = new File(["image"], "avatar.jpg", { type: "image/jpeg" });
+
+    await updateProfile({ avatar });
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const form = init.body as FormData;
+    expect(form.has("nickname")).toBe(false);
+    expect(form.get("avatar")).toBe(avatar);
   });
 });
 

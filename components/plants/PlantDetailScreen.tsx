@@ -1,5 +1,6 @@
 import PageHeader from "@/components/layout/PageHeader";
 import RarityBadge from "@/components/plants/RarityBadge";
+import { PlantPlaceholder } from "@/components/ui/PlantPlaceholder";
 import type { PlantDetailScreenData } from "@/types/plant";
 
 export default function PlantDetailScreen({ data }: { data: PlantDetailScreenData }) {
@@ -18,12 +19,14 @@ export default function PlantDetailScreen({ data }: { data: PlantDetailScreenDat
         showBack
       />
 
-      <div className="h-[276px] w-full overflow-hidden rounded-[var(--radius-card)] bg-[var(--color-placeholder)]">
+      <div className="flex h-[276px] w-full items-center justify-center overflow-hidden rounded-[var(--radius-card)] bg-[var(--color-placeholder)]">
         {data.imageUrl ? (
           // User observation images can be local mock paths, data URLs, or remote URLs.
           // eslint-disable-next-line @next/next/no-img-element
           <img src={data.imageUrl} alt={data.koreanName} className="h-full w-full object-cover" />
-        ) : null}
+        ) : (
+          <PlantPlaceholder size={120} ariaLabel={`${data.koreanName} 사진 없음`} />
+        )}
       </div>
 
       {data.rarity ? <RarityBadge rarity={data.rarity} size="md" /> : null}

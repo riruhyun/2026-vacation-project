@@ -1,6 +1,7 @@
 import { RiQuestionMark } from "@remixicon/react";
 import Link from "next/link";
 import type { RarityCode } from "@/types/domain";
+import { PlantPlaceholder } from "@/components/ui/PlantPlaceholder";
 import RarityBadge from "./RarityBadge";
 
 type PlantCardSize = "sm" | "lg";
@@ -68,7 +69,7 @@ export default function PlantCard({
             className="h-full w-full object-cover"
           />
         ) : (
-          <PlaceholderPlantIcon />
+          <PlantPlaceholder size={40} ariaLabel={`${koreanName} 사진 없음`} />
         )}
       </div>
 
@@ -103,22 +104,4 @@ export default function PlantCard({
   }
 
   return <Link href={link}>{content}</Link>;
-}
-
-function PlaceholderPlantIcon() {
-  return (
-    <svg width="40" height="40" viewBox="0 0 56 56" fill="none" aria-hidden="true">
-      <path
-        d="M28 50V26"
-        stroke="var(--color-primary)"
-        strokeWidth="3"
-        strokeLinecap="round"
-      />
-      <ellipse cx="20" cy="30" rx="8" ry="5" fill="var(--color-primary)" opacity="0.7" />
-      <ellipse cx="36" cy="24" rx="8" ry="5" fill="var(--color-primary)" opacity="0.7" />
-      <circle cx="28" cy="14" r="9" fill="var(--color-accent)" />
-      <circle cx="20" cy="18" r="6" fill="var(--color-rarity-uncommon-surface)" />
-      <circle cx="36" cy="18" r="6" fill="var(--color-rarity-uncommon-surface)" />
-    </svg>
-  );
 }
