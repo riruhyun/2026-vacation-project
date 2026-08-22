@@ -21,7 +21,6 @@
     "swagger-ui-react": "^5.32.13"
   },
   "devDependencies": {
-    "@apidevtools/swagger-parser": "^12.1.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20.19.43",
     "@types/react": "^19",
@@ -30,7 +29,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.12",
     "tailwindcss": "^4",
-    "typescript": "^5",
-    "vitest": "^3.2.4"
+    "typescript": "^6.0.3",
+    "vitest": "^3.2.7"
   }
 }
