@@ -6,7 +6,6 @@ const supabaseHostname = process.env.NEXT_PUBLIC_SUPABASE_URL
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
-  allowedDevOrigins: ["172.30.1.99"],
   turbopack: {
     root: process.cwd(),
   },

@@ -105,10 +105,8 @@ export async function GET() {
   }
 }
 
-/**
- * 닉네임과 프로필 사진을 수정합니다. 둘 다 선택 항목이라 보낸 것만 반영합니다.
- * 사진은 프로필 전용 avatars 버킷에 사용자별 폴더로 저장합니다.
- */
+// 닉네임과 프로필 사진 수정 - 둘 다 선택 항목이기에 요청을 보낸 것만 반영
+// 프로필 사진은 프로필 전용 avatars 버킷에 사용자별 폴더로 저장됨
 export async function PATCH(request: Request) {
   const userId = await userIdFromSession()
   if (!userId) return fail('로그인이 필요합니다.', 401)
@@ -130,7 +128,7 @@ export async function PATCH(request: Request) {
   try {
     const updates: { nickname?: string; avatar_path?: string } = {}
 
-    // 업로드보다 검사를 먼저 끝냅니다. 중간에 실패해도 파일이 남지 않게 하려는 것입니다.
+    // 업로드보다 검사를 먼저 끝냄 (중간에 실패해도 파일이 남지 않도록 하기 위함)
     if (hasNickname) {
       const nickname = normalizeNickname(nicknameField)
       const invalid = nicknameError(nickname)
@@ -178,7 +176,7 @@ export async function PATCH(request: Request) {
       .single()
 
     if (error) {
-      // 저장에 실패하면 방금 올린 사진은 쓸모가 없으므로 지웁니다.
+      // 저장 실패시 방금 올린 사진은 삭제
       if (updates.avatar_path) {
         await supabase.storage.from(AVATAR_BUCKET).remove([updates.avatar_path])
       }
@@ -186,7 +184,7 @@ export async function PATCH(request: Request) {
       throw error
     }
 
-    // 새 사진으로 바뀌었으면 이전 파일은 남겨둘 이유가 없습니다.
+    // 새 사진으로 바뀌었으면 이전 파일은 삭제
     if (updates.avatar_path && previousAvatarPath) {
       await supabase.storage.from(AVATAR_BUCKET).remove([previousAvatarPath])
     }

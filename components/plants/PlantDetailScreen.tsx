@@ -21,7 +21,6 @@ export default function PlantDetailScreen({ data }: { data: PlantDetailScreenDat
 
       <div className="flex h-[276px] w-full items-center justify-center overflow-hidden rounded-[var(--radius-card)] bg-[var(--color-placeholder)]">
         {data.imageUrl ? (
-          // User observation images can be local mock paths, data URLs, or remote URLs.
           // eslint-disable-next-line @next/next/no-img-element
           <img src={data.imageUrl} alt={data.koreanName} className="h-full w-full object-cover" />
         ) : (

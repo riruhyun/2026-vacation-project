@@ -16,7 +16,7 @@ export default async function FindingDetailPage({
   try {
     const [collection, forestPlant] = await Promise.all([
       getCollection(),
-      // 산림청 조회는 실패해도 화면을 막지 않습니다. 설명 없이 지금까지처럼 보여줍니다.
+      // 산림청 조회에 실패해도 화면을 막지 않음
       getForestPlant(decodedName).catch(() => null),
     ]);
     const data = buildFindingDetailData(decodedName, collection, forestPlant);

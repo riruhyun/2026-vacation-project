@@ -13,7 +13,7 @@ interface IdentifyResultScreenProps {
 
 function XpBreakdown({ response }: IdentifyResultScreenProps) {
   const { breakdown, xp } = response.reward;
-  // 흔함 희귀도처럼 0 XP인 사유는 굳이 보여주지 않습니다.
+  // 흔함 희귀도처럼, 0 XP인 경우는 굳이 보여주지 않음
   const visibleEvents = breakdown.filter((event) => event.xp > 0);
 
   if (xp === 0) {

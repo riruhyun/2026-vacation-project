@@ -26,7 +26,6 @@ export default function LoginPage() {
     }
     setIsSubmitting(true);
     setErrorMessage(null);
-    // 회원가입은 닉네임까지 모아 한 번에 보냅니다.
     const result = await fetch(`/api/auth/${isSignUp ? "sign-up" : "sign-in"}`, {
       method: "POST",
       headers: { "content-type": "application/json" },

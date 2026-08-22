@@ -3,12 +3,6 @@ import { AVATAR_BUCKET } from '@/lib/server/image'
 import { supabase } from '@/lib/server/supabase'
 import { userIdFromSession } from '@/lib/server/user'
 
-/**
- * 프로필 사진을 지우고 기본 사진으로 되돌립니다.
- *
- * 사진만 지우는 요청이라 계정 삭제로 읽히지 않게 /api/profile 아래에 두었습니다.
- * 이미 기본 사진이어도 성공으로 답합니다. 두 번 눌러도 결과가 같아야 하기 때문입니다.
- */
 export async function DELETE() {
   const userId = await userIdFromSession()
   if (!userId) return fail('로그인이 필요합니다.', 401)
@@ -32,8 +26,7 @@ export async function DELETE() {
       return ok({ profile: { nickname, avatarUrl: null } })
     }
 
-    // 열을 먼저 비웁니다. 파일 삭제가 실패해도 화면은 기본 사진으로 맞습니다.
-    // 순서를 뒤집으면 저장에 실패했을 때 없는 파일을 가리키게 됩니다.
+    // 열을 먼저 비움
     const { error } = await supabase
       .from('profiles')
       .update({ avatar_path: null, updated_at: new Date().toISOString() })

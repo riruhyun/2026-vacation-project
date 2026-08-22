@@ -28,7 +28,7 @@ function text(form: FormData, key: string) {
   return typeof value === 'string' ? value.trim() : ''
 }
 
-/** 같은 날(한국 시간) 같은 종을 이미 기록했는지 확인합니다. */
+// 같은 날에 같은 종을 이미 기록했는지 여부 확인
 async function isSameDayRepeat(
   userId: string,
   collectionCardId: number | null,
@@ -68,7 +68,7 @@ async function isSameDayRepeat(
   return (matches || []).length > 0
 }
 
-/** 이 종을 처음 기록하는 관찰인지 확인합니다. */
+// 이 종을 처음 기록하는 것인지 여부 확인
 async function isFirstDiscovery(
   userId: string,
   collectionCardId: number | null,
@@ -164,7 +164,6 @@ export async function POST(request: Request) {
       return fail('기타 식물은 displayName이 필요합니다.')
     }
 
-    // XP는 서버에서만 계산하고, Supabase 함수에는 확정된 값만 넘깁니다.
     const [sameDayRepeat, firstDiscovery] = await Promise.all([
       isSameDayRepeat(
         userId,
@@ -206,7 +205,6 @@ export async function POST(request: Request) {
         p_image_path: path,
         p_identification_score: identificationScore,
         p_candidates: candidates,
-        // 함수는 이 값을 가공하지 않고 그대로 적립합니다.
         p_base_xp: xpAwarded,
       },
     )

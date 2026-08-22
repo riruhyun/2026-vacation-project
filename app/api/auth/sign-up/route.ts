@@ -8,10 +8,6 @@ import {
 } from "@/lib/nickname";
 import { isNicknameTaken } from "@/lib/server/profile";
 
-/**
- * 닉네임, 이메일, 비밀번호를 한 번에 받습니다.
- * 닉네임은 auth.users의 메타데이터로 넘기고, handle_new_user 트리거가 profiles에 씁니다.
- */
 export async function POST(request: NextRequest) {
   let body: { email?: unknown; password?: unknown; nickname?: unknown };
   try {
@@ -37,8 +33,6 @@ export async function POST(request: NextRequest) {
   });
 
   if (error) {
-    // 위 확인과 계정 생성 사이에 누가 같은 닉네임을 선점하면 고유 인덱스가 막습니다.
-    // 그때 Supabase는 원인을 감춘 메시지를 주므로 다시 확인해 이유를 알려줍니다.
     if (await isNicknameTaken(normalized)) return fail(NICKNAME_TAKEN_MESSAGE, 409);
     return fail(error.message, 400);
   }

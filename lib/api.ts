@@ -19,11 +19,6 @@ import type {
 } from '@/types/user'
 import type { ActivitiesResponseDto } from '@/types/activity'
 
-/**
- * 화면에서 API를 부를 때 쓰는 함수 모음입니다.
- * 실패하면 ApiError를 던지므로 try/catch로 받아 메시지를 그대로 보여주면 됩니다.
- */
-
 export class ApiError extends Error {
   status: number
   details?: unknown
@@ -35,12 +30,10 @@ export class ApiError extends Error {
     this.details = details
   }
 
-  /** 사진에서 식물을 찾지 못한 경우입니다. 다시 촬영 안내를 띄우면 됩니다. */
   get isNotIdentified() {
     return this.status === 422
   }
 
-  /** 로그인이 필요한 경우입니다. */
   get isUnauthorized() {
     return this.status === 401
   }
@@ -93,12 +86,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return body.data
 }
 
-/** 환경변수와 서버 상태를 확인합니다. 외부 API 할당량을 쓰지 않습니다. */
 export function getHealth() {
   return request<HealthResponse>('/api/health')
 }
 
-/** 사진 한 장을 보내 식물 후보를 최대 3개 받습니다. */
+// 사진 한 장을 보내 식물 후보를 최대 3개 받음
 export function identifyPlant(
   image: Blob,
   organ: PlantOrgan = 'auto',
@@ -108,7 +100,7 @@ export function identifyPlant(
   form.append('image', image, image instanceof File ? image.name : 'plant.jpg')
   if (organ !== 'auto') form.append('organ', organ)
 
-  // Content-Type은 브라우저가 boundary와 함께 자동으로 붙이므로 지정하지 않습니다.
+  // Content-Type은 브라우저가 boundary와 함께 자동으로 붙이므로 지정하지 않음
   return request<IdentifyResponseDto>('/api/identify', {
     method: 'POST',
     body: form,
@@ -116,7 +108,6 @@ export function identifyPlant(
   })
 }
 
-/** 사용자가 고른 식물을 사진과 함께 저장합니다. */
 export function saveObservation(
   input: CreateObservationInput,
   signal?: AbortSignal,
@@ -148,22 +139,18 @@ export function saveObservation(
   })
 }
 
-/** 공식 도감 전체와 기타 발견, 완성률을 가져옵니다. */
 export function getCollection() {
   return request<CollectionResponseDto>('/api/collection')
 }
 
-/** 식물 상세 정보와 내 관찰 기록을 가져옵니다. */
 export function getPlant(plantId: number) {
   return request<PlantDetailResponseDto>(`/api/plants/${plantId}`)
 }
 
-/** 닉네임, 누적 경험치, 관찰 통계를 가져옵니다. */
 export function getProfile() {
   return request<ProfileResponse>('/api/profile')
 }
 
-/** 닉네임이나 프로필 사진을 바꿉니다. 보낸 항목만 반영됩니다. */
 export function updateProfile(input: UpdateProfileInput) {
   const form = new FormData()
   if (input.nickname !== undefined) form.append('nickname', input.nickname)
@@ -175,7 +162,6 @@ export function updateProfile(input: UpdateProfileInput) {
   })
 }
 
-/** 프로필 사진을 지우고 기본 사진으로 되돌립니다. 이미 기본이어도 성공합니다. */
 export function deleteAvatar() {
   return request<UpdateProfileResponse>('/api/profile/avatar', {
     method: 'DELETE',

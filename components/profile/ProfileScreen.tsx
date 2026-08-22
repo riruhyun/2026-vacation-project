@@ -137,7 +137,6 @@ export default function ProfileScreen({ data }: { data: ProfilePageData }) {
             className="relative flex h-[78px] w-[78px] items-center justify-center overflow-hidden rounded-[var(--radius-control)] bg-[var(--color-primary)] text-[var(--color-surface)] outline-offset-2 focus-visible:outline-2 focus-visible:outline-[var(--color-primary-strong)] disabled:cursor-wait"
           >
             {profile.avatarUrl ? (
-              /* Supabase 스토리지의 공개 URL이라 next/image 원격 설정 없이 그대로 씁니다. */
               /* eslint-disable-next-line @next/next/no-img-element */
               <img
                 src={profile.avatarUrl}

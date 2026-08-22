@@ -61,7 +61,6 @@ export default function PlantCard({
             <RiQuestionMark size={40} className="text-[var(--color-text-muted)]" />
           </span>
         ) : imageUrl ? (
-          // User uploads and PlantNet images can be data or remote URLs.
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={imageUrl}
